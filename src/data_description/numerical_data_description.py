@@ -27,7 +27,6 @@ if pd.api.types.is_numeric_dtype(weight):
     print(f"Negative values in the column: {(weight < 0).sum()}")
 else:
     print("The column is not numeric.")
-    
 
 height = df['Altura']
 print("\n Height Column Description:")
@@ -52,7 +51,7 @@ if pd.api.types.is_numeric_dtype(height):
     print(f"Negative values in the column: {(height < 0).sum()}")
 else:
     print("The column is not numeric.")
-    
+
 
 imc = df['IMC']
 print("\n IMC Column Description:")
@@ -86,7 +85,7 @@ if {'Peso', 'Altura'}.issubset(df.columns):
     imc_calculated = df.loc[mask, 'Peso'] / ((df.loc[mask, 'Altura']/100) ** 2)
     differences = (np.abs(df.loc[mask, 'IMC'] - imc_calculated) > 0.5).sum()
     print(f"\nDifferences > 0.5 kg/m²: {differences}") # this line will print the number of rows where the difference between the provided IMC and the calculated IMC is greater than 0.5 kg/m²
-    
+ 
 age = df['IDADE']
 print("\n Age Column Description:")
 print(f"Column defined type: {age.dtype}")
@@ -126,8 +125,8 @@ else:
     print(f"Zeros in the column: {(age_numeric == 0).sum()}")
     print(f"Negative values in the column: {(age_numeric < 0).sum()}")
     print(f"Infinite values in the column: {age_numeric.isin([float('inf'), float('-inf')]).sum()}")
-    
-    
+
+
 pa_sistolic = df['PA SISTOLICA']
 print("\n PA Sistolic Column Description:")
 print(f"Column defined type: {pa_sistolic.dtype}")
@@ -151,7 +150,7 @@ if pd.api.types.is_numeric_dtype(pa_sistolic):
     print(f"Negative values in the column: {(pa_sistolic < 0).sum()}")
 else:
     print("The column is not numeric.")
-    
+
 pa_diastolic = df['PA DIASTOLICA']
 print("\n PA Diastolic Column Description:")
 print(f"Column defined type: {pa_diastolic.dtype}")
@@ -175,7 +174,7 @@ if pd.api.types.is_numeric_dtype(pa_diastolic):
     print(f"Negative values in the column: {(pa_diastolic < 0).sum()}")
 else:
     print("The column is not numeric.")
-    
+
 fc = df['FC']
 print("\n FC Column Description:")
 print(f"Column defined type: {fc.dtype}")
