@@ -1,0 +1,187 @@
+CATEGORICAL VARIABLES
+
+Convenio Column Description:
+Column defined type: object
+Total number of lines in the column: 17873
+Number of non-null values in the column: 12569
+Number of null values in the column: 5304
+Percentage of null values in the column: 29.68%
+Number of unique values: 439
+Top 5 most frequent values (Value Counts):
+Convenio
+GS       2763
+UR       2287
+SB        718
+GRUPO     553
+CAMED     478
+
+PULSOS Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16675
+Number of null values in the column: 1198
+Percentage of null values in the column: 6.70%
+Number of unique values: 7
+Top 5 most frequent values (Value Counts):
+PULSOS
+Normais                16509
+Amplos                    57
+Outro                     45
+Femorais diminuidos       43
+Diminuídos                18
+
+PPA Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 17656
+Number of null values in the column: 217
+Percentage of null values in the column: 1.21%
+Number of unique values: 9
+Top 5 most frequent values (Value Counts):
+PPA
+Não Calculado          9081
+Normal                 6141
+#VALUE!                1496
+Pre-Hipertensão PAD     233
+HAS-2 PAS               215
+
+NORMAL X ANORMAL Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16705
+Number of null values in the column: 1168
+Percentage of null values in the column: 6.53%
+Number of unique values: 4
+Top 5 most frequent values (Value Counts):
+NORMAL X ANORMAL
+Normal     9991
+Anormal    6712
+anormal       1
+Normais       1
+
+B2 Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16694
+Number of null values in the column: 1179
+Percentage of null values in the column: 6.60%
+Number of unique values: 5
+Top 5 most frequent values (Value Counts):
+B2
+Normal           15969
+Hiperfonética      342
+Desdob fixo        190
+Outro              107
+Única               86
+
+SOPRO Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16706
+Number of null values in the column: 1167
+Percentage of null values in the column: 6.53%
+Number of unique values: 7
+Top 5 most frequent values (Value Counts):
+SOPRO
+ausente      10727
+Sistólico     4821
+sistólico     1090
+contínuo        30
+Contínuo        23
+
+HDA 1 Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 12459
+Number of null values in the column: 5414
+Percentage of null values in the column: 30.29%
+Number of unique values: 8
+Top 5 most frequent values (Value Counts):
+HDA 1
+Assintomático     9291
+Dor precordial     873
+Dispneia           764
+Palpitacao         576
+Cianose            298
+
+HDA2 Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 652
+Number of null values in the column: 17221
+Percentage of null values in the column: 96.35%
+Number of unique values: 8
+Top 5 most frequent values (Value Counts):
+HDA2
+Palpitacao         150
+Dispneia           138
+Dor precordial      98
+Cianose             86
+Desmaio/tontura     77
+
+SEXO Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 17869
+Number of null values in the column: 4
+Percentage of null values in the column: 0.02%
+Number of unique values: 6
+Top 5 most frequent values (Value Counts):
+SEXO
+M                8930
+F                6612
+Indeterminado    1417
+Masculino         584
+Feminino          247
+
+MOTIVO1 Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16776
+Number of null values in the column: 1097
+Percentage of null values in the column: 6.14%
+Number of unique values: 5
+Top 5 most frequent values (Value Counts):
+MOTIVO1
+5 - Parecer cardiológico           7981
+6 - Suspeita de cardiopatia        5863
+1 - Cardiopatia já estabelecida    1428
+2 - Check-up                       1048
+7 - Outro                           456
+
+MOTIVO2 Column Description:
+Column defined type: str
+Total number of lines in the column: 17873
+Number of non-null values in the column: 13095
+Number of null values in the column: 4778
+Percentage of null values in the column: 26.73%
+Number of unique values: 16
+Top 5 most frequent values (Value Counts):
+MOTIVO2
+5 - Cirurgia                 4212
+6 - Sopro                    2997
+1 - Cardiopatia congenica    1262
+5 - Atividade física         1137
+Outro                        1097
+
+DATE VARIABLES
+
+Atendimento Column Description:
+Column defined type: object (Converted to datetime64)
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16890
+Number of null values in the column: 983
+Percentage of null values in the column: 5.50%
+Excel serial dates converted: 397
+Earliest date (Min): 1966-08-22
+Latest date (Max): 2023-06-25
+
+DN Column Description:
+Column defined type: object (Converted to datetime64)
+Total number of lines in the column: 17873
+Number of non-null values in the column: 16382
+Number of null values in the column: 1491
+Percentage of null values in the column: 8.34%
+Excel serial dates converted: 188
+Earliest date (Min): 1927-12-03
+Latest date (Max): 2022-07-09
