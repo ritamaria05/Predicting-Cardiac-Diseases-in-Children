@@ -11,22 +11,48 @@ OUT_PATH = os.path.join(OUT_DIR, "UCMF_cleaned.csv")
 # SECTION A: NUMERICAL VARIABLES
 # Columns: IDADE, Peso, Altura, IMC, PA SISTOLICA, PA DIASTOLICA, FC
 def clean_numerical(df):
-    print("\n=== Cleaning numerical variables ===")
-    # TODO: colleague's cleaning steps
+    print("\nCleaning numerical variables")
     return df
 
 
 # SECTION B: CATEGORICAL AND DATE VARIABLES (you)
 # Columns: PULSOS, B2, SOPRO, HDA 1, HDA2, SEXO, MOTIVO1, MOTIVO2, Convenio, DN, Atendimento, PPA, NORMAL X ANORMAL
+def standardize_labels(df, col, mapping):
+    original = df[col]
+    key = original.astype('string').str.strip().str.lower()
+    new = key.map(mapping)
+
+    unmapped = original.notna() & new.isna()
+    if unmapped.any():
+        print(f"  [WARNING] {col}: values not in the mapping (kept as they are): "
+              f"{original[unmapped].unique().tolist()}")
+        new[unmapped] = original[unmapped]
+
+    changed = (original.notna() & (new != original)).fillna(False)
+    print(f"  {col}: {original.nunique()} unique values -> {new.nunique()}; "
+          f"{changed.sum()} values changed")
+    df[col] = new
+    return df
+
 def clean_dates(df):
     # TODO phase 2
     return df
 
-
 def clean_binary(df):      # SEXO, NORMAL X ANORMAL
-    # TODO phase 2
-    return df
+    print("\nBinary variables")
 
+    sex_map = {'m': 'M', 'masculino': 'M',
+               'f': 'F', 'feminino': 'F',
+               'indeterminado': 'Indeterminado'}
+    df = standardize_labels(df, 'SEXO', sex_map)
+
+    target_map = {'normal': 'Normal', 'normais': 'Normal',
+                  'anormal': 'Anormal'}
+    df = standardize_labels(df, 'NORMAL X ANORMAL', target_map)
+
+    for col in ['SEXO', 'NORMAL X ANORMAL']:
+        print(df[col].value_counts(dropna=False).to_string())
+    return df
 
 def clean_nominal(df):     # PULSOS, B2, SOPRO, HDA 1, HDA2, MOTIVO1, MOTIVO2, Convenio
     # TODO phase 2
@@ -39,7 +65,7 @@ def clean_ordinal(df):     # PPA
 
 
 def clean_categorical(df):
-    print("\n=== Cleaning categorical and date variables ===")
+    print("\nCleaning categorical and date variables")
     df = clean_dates(df)
     df = clean_binary(df)
     df = clean_nominal(df)
