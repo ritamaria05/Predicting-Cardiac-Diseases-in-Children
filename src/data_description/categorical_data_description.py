@@ -3,7 +3,7 @@ import numpy as np
 import warnings
 
 
-df = pd.read_excel('/Users/bia/Developer/mcc/fcd/project/Predicting-Cardiac-Diseases-in-Children/UCMF(5).xls')
+df = pd.read_excel('UCMF(5).xls')
 
 
 cat_cols = ['Convenio', 'PULSOS', 'PPA', 'NORMAL X ANORMAL', 'B2', 'SOPRO', 'HDA 1', 'HDA2', 'SEXO', 'MOTIVO1', 'MOTIVO2']
