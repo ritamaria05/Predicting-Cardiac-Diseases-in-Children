@@ -1,23 +1,112 @@
+'''Script for the data cleaning process'''
 import os
-import pandas as pd
-import numpy as np
 import unicodedata
 import re
+import pandas as pd
+import numpy as np
+from mappings import CONVENIO_MAPPING, CONVENIO_LOOKUP
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_PATH = os.path.join(ROOT, 'UCMF(5).xls')
 OUT_DIR = os.path.join(ROOT, "data")
 OUT_PATH = os.path.join(OUT_DIR, "UCMF_cleaned.csv")
 
+# resolving inconsistencies
+def rename_columns(df):
+    '''Changing feature names to avoid spaces and special characters'''
+    df = df.rename(columns={
+        'ID': 'id',
+        'Peso': 'peso',
+        'Altura': 'altura',
+        'IMC': 'imc',
+        'Atendimento': 'atendimento',
+        'DN': 'data_nascimento',
+        'IDADE': 'idade',
+        'Convenio': 'convenio',
+        'PULSOS': 'pulsos',
+        'PA SISTOLICA': 'pa_sistolica',
+        'PA DIASTOLICA': 'pa_diastolica',
+        'PPA': 'ppa',
+        'NORMAL X ANORMAL': 'normal_x_anormal',
+        'B2': 'b2',
+        'SOPRO': 'sopro',
+        'FC': 'fc',
+        'HDA 1': 'hda_1',
+        'HDA2': 'hda_2',
+        'SEXO': 'sexo',
+        'MOTIVO1': 'motivo_1',
+        'MOTIVO2': 'motivo_2',
+    })
+    return df
 
-# SECTION A: NUMERICAL VARIABLES
+# dealing with duplicate rows/objects
+def remove_duplicates(df):
+    '''Removing exact duplicate rows'''
+    initial_rows = len(df)
+    # step 1: check for 100% duplicate rows
+    print(f"  Removing {df.duplicated().sum()} duplicate rows")
+    df = df.drop_duplicates()
+    # step 2: check for duplicate IDs on the same date (keep the first one)
+    if {"id", "atendimento"}.issubset(df.columns):
+        valid_visit_key = df["id"].notna() & df["atendimento"].notna()
+        same_visit_mask = df.duplicated(subset=["id", "atendimento"],
+                                        keep="first") & valid_visit_key
+        print(f"  Removing {same_visit_mask.sum()} duplicate visits (same id and atendimento)")
+        df = df[~same_visit_mask]
+    # step 3: check for duplicates where two patients share
+    # identical clinical and demographic data, with different or missing 'id'
+    non_id_cols = [col for col in df.columns if col != "id"]
+    quasi_id_cols = [c for c in ["data_nascimento", "atendimento",
+                                 "peso", "altura", "pa_sistolica", "pa_diastolica",
+                                 "fc"] if c in df.columns]
+    has_quasi_id = df[quasi_id_cols].notna().any(axis=1)
+
+    feature_dups_mask = df.duplicated(subset=non_id_cols, keep="first") & has_quasi_id
+    print(f"  Removing {feature_dups_mask.sum()} non-ID full-record duplicate rows")
+    df = df[~feature_dups_mask].reset_index(drop=True)
+
+    print(f"  Total duplicate rows removed: {initial_rows - len(df)}")
+    return df
+
+# text normalization for categorical variables
+def normalize_text_key(series: pd.Series) -> pd.Series:
+    """Standardize string casing, accents, punctuation, and whitespace."""
+    def _clean(val):
+        if pd.isna(val):
+            return np.nan
+        s = str(val).strip().upper()
+        s = "".join(
+            c for c in unicodedata.normalize("NFD", s)
+            if unicodedata.category(c) != "Mn"
+        )
+        s = re.sub(r"[./;]", " ", s)
+        s = re.sub(r"\s+", " ", s).strip()
+        return np.nan if s in {"", "NAN", "NONE", "NULL", "NA", "?"} else s
+
+    return series.map(_clean)
+
+# convenio normalization: group rare insurers into "Outro" and standardize common ones
+def clean_convenio(df, min_freq: int = 5):
+    '''Normalize text and group insurers according to name similarity.'''
+    s = normalize_text_key(df["convenio"])
+    s = s.where(~s.str.isdigit().fillna(False), np.nan)
+    s = s.replace(CONVENIO_LOOKUP)
+    counts = s.value_counts()
+    return s.where(s.isin(counts[counts >= min_freq].index), "OUTROS")
+    # numbers in convenio should be analysed separately,
+    # as they may represent dates that are wrongly misplaced in the convenio column
+    # the best option is to treat the dates before the convenio,
+    # so that the numbers present are not misinterpreted as convenio values
+    
+
+# NUMERICAL VARIABLES
 # Columns: IDADE, Peso, Altura, IMC, PA SISTOLICA, PA DIASTOLICA, FC
 def clean_numerical(df):
-    print("\n\nCleaning numerical variables")
+    print("\n\nCleaning numerical variables...")
     return df
 
 
-# SECTION B: CATEGORICAL AND DATE VARIABLES (you)
+# CATEGORICAL AND DATE VARIABLES
 # Columns: PULSOS, B2, SOPRO, HDA 1, HDA2, SEXO, MOTIVO1, MOTIVO2, Convenio, DN, Atendimento, PPA, NORMAL X ANORMAL
 def standardize_labels(df, col, mapping):
     original = df[col]
@@ -132,76 +221,6 @@ def clean_ordinal(df):     # PPA
     print(df['PPA'].value_counts(dropna=False).to_string())
     return df
 
-CONVENIO_RULES = [
-    (r'^cass', 'Cassi'),
-    (r'^(camed|acmed)', 'Camed'),
-    (r'^(amep|campe)', 'Amepe/Campe'),
-    (r'^media', 'Medial'),
-    (r'^(medi?s|mede?s|mers)', 'Mediservice'),
-    (r'^nor[cl]', 'Norclínicas'),
-    (r'^real', 'Real Saúde'),
-    (r'^(reemb|ree)', 'Reembolso'),
-    (r'^(ideal|odeal)', 'Ideal'),
-    (r'^fusex', 'Fusex'),
-    (r'^semep', 'Semepe'),
-    (r'^fun[cs]ef', 'Funcef'),
-    (r'^fac[hj]a?es', 'Fachesf'),
-    (r'^celpos', 'Celpos'),
-    (r'^(santa|sta)cl', 'Santa Clara'),
-    (r'^(santa|sta)lu', 'Santa Lúcia'),
-    (r'^(santa|sta|sant|st|s)h(e|er)', 'Santa Helena'),
-    (r'^(circ|ccor)', 'Círculo'),
-    (r'^cort', 'Cortesia'),
-    (r'^(corr|core)', 'Correios'),
-    (r'^(part|patrt)', 'Particular'),
-    (r'^petro(b|f$|$)', 'Petrobras'),
-    (r'^embr', 'Embratel'),
-    (r'^blu', 'Bluelife'),
-    (r'^(caixa|saudecaixa|scaixa|scx)', 'Caixa'),
-    (r'^gama', 'Gama'),
-    (r'^assef', 'Assefaz'),
-    (r'^fisco', 'Fisco'),
-    (r'^(tab|tba)', 'Tabela'),
-    (r'^(sul|samer|ameri)', 'Sul América'),
-    (r'^((saude|s)rec|saudere)', 'Saúde Recife'),
-    (r'^(saude|s)?b[ar]+desco', 'Bradesco Saúde'),
-    (r'^(urec|unrec|unimrec|unimedr)', 'Unimed Recife'),
-]
-MIN_ROWS_CONVENIO = 30
-
-def clean_convenio(df):
-    print("\nConvenio")
-    original = df['Convenio']
-    text = original.astype('string').str.strip()
-
-    # numbers are not insurers
-    is_number = text.str.fullmatch(r'\d+(\.0+)?').fillna(False)
-
-    # normalise and group the families
-    def standardize(value):
-        key = compact_text(value)
-        for pattern, label in CONVENIO_RULES:
-            if re.match(pattern, key):
-                return label
-        return key.upper()
-
-    new = text.map(standardize, na_action='ignore').astype('string')
-    new[is_number] = pd.NA
-
-    print(f"  Convenio: {original.nunique()} unique values -> {new.nunique()}")
-    print(f"  Numbers (not insurers) set to missing: {is_number.sum()}")
-    print(f"  Missing after cleaning: {new.isna().sum()} ({new.isna().mean() * 100:.2f}%)")
-    df['Convenio'] = new
-
-    # new column with the rare insurers grouped
-    counts = new.value_counts()
-    rare = counts[counts < MIN_ROWS_CONVENIO].index
-    df['Convenio_group'] = new.where(~new.isin(rare), 'Outro')
-    print(f"  Convenio_group: {df['Convenio_group'].nunique()} unique values "
-          f"(insurers with < {MIN_ROWS_CONVENIO} rows -> 'Outro': "
-          f"{(df['Convenio_group'] == 'Outro').sum()} rows)")
-    print(df['Convenio_group'].value_counts(dropna=False).head(15).to_string())
-    return df
 
 def clean_categorical(df):
     print("\n\nCleaning categorical and date variables")

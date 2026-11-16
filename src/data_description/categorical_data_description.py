@@ -1,3 +1,5 @@
+import unicodedata
+import re
 import pandas as pd
 import numpy as np
 import warnings
@@ -21,9 +23,8 @@ for col in cat_cols:
     print(f"Percentage of null values in the column: {s.isna().mean() * 100:.2f}%")
     
     print(f"Number of unique values: {s.nunique()}")
-    print("Top 5 most frequent values (Value Counts):")
-
-    print(s.value_counts().head(5).to_string())
+    print("Values and their frequencies:")
+    print(s.value_counts().head(s.nunique()).to_string())
 
 # ---------------------------------------------------------
 
@@ -64,3 +65,30 @@ for col in dt_cols:
     if s.count() > 0:
         print(f"Earliest date (Min): {s.min().date()}")
         print(f"Latest date (Max): {s.max().date()}")
+        
+
+def normalize_text_key(series: pd.Series) -> pd.Series:
+    """Standardize string casing, accents, punctuation, and whitespace."""
+    def _clean(val):
+        if pd.isna(val):
+            return np.nan
+        s = str(val).strip().upper()
+        s = "".join(
+            c for c in unicodedata.normalize("NFD", s)
+            if unicodedata.category(c) != "Mn"
+        )
+        s = re.sub(r"[./;]", " ", s)
+        s = re.sub(r"\s+", " ", s).strip()
+        return np.nan if s in {"", "NAN", "NONE", "NULL", "NA", "?"} else s
+
+    return series.map(_clean)
+
+
+print("\nPOST-NORMALIZATION UNIQUE VALUES (READ-ONLY DIAGNOSTIC)")
+for col in cat_cols:
+    norm_series = normalize_text_key(df[col])
+    print(f"\n--- {col} (Unique after normalization: {norm_series.nunique()}) ---")
+    print(norm_series.value_counts(dropna=False).to_string())
+    
+numeric_mask = df["Convenio"].astype(str).str.strip().str.isdigit()
+print(df.loc[numeric_mask, ["ID", "Atendimento", "DN", "Convenio", "SEXO", "IDADE"]])
