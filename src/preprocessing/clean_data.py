@@ -108,7 +108,28 @@ def clean_nominal(df):     # PULSOS, B2, SOPRO, HDA 1, HDA2, MOTIVO1, MOTIVO2, C
     return df
 
 def clean_ordinal(df):     # PPA
-    # TODO phase 2
+    print("\n-Ordinal variable (PPA)")
+    ppa = df['PPA'].astype('string').str.strip()
+
+    status = pd.Series('Calculated', index=df.index, dtype='string')
+    status[ppa == 'Não Calculado'] = 'Not calculated'
+    status[ppa == '#VALUE!'] = 'Excel error'
+    status[ppa.isna()] = 'Empty'
+    df['PPA_status'] = status
+
+    # 'Não Calculado' and '#VALUE!' are not blood pressure classes: set to missing
+    not_available = ppa.isin(['Não Calculado', '#VALUE!'])
+    df.loc[not_available, 'PPA'] = pd.NA
+    print(f"  'Não Calculado' and '#VALUE!' set to missing: {not_available.sum()}")
+
+    valid = ['Normal', 'Pre-Hipertensão PAS', 'Pre-Hipertensão PAD',
+             'HAS-1 PAS', 'HAS-1 PAD', 'HAS-2 PAS', 'HAS-2 PAD']
+    df = standardize_labels(df, 'PPA', make_map(valid))
+
+    print(f"  PPA missing after cleaning: {df['PPA'].isna().sum()} "
+          f"({df['PPA'].isna().mean() * 100:.2f}%)")
+    print(df['PPA_status'].value_counts().to_string())
+    print(df['PPA'].value_counts(dropna=False).to_string())
     return df
 
 CONVENIO_RULES = [
@@ -172,7 +193,7 @@ def clean_convenio(df):
     print(f"  Missing after cleaning: {new.isna().sum()} ({new.isna().mean() * 100:.2f}%)")
     df['Convenio'] = new
 
-    # Stage 4: new column with the rare insurers grouped
+    # new column with the rare insurers grouped
     counts = new.value_counts()
     rare = counts[counts < MIN_ROWS_CONVENIO].index
     df['Convenio_group'] = new.where(~new.isin(rare), 'Outro')
