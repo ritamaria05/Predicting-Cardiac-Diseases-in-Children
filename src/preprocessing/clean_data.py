@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
+import unicodedata
+import re
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_PATH = os.path.join(ROOT, 'UCMF(5).xls')
@@ -41,6 +43,12 @@ def make_map(labels, variants=None):
     if variants:
         mapping.update(variants)
     return mapping
+
+def compact_text(value):
+    """Lowercase, no accents, no spaces or punctuation: 'REAL S.' -> 'reals'"""
+    text = unicodedata.normalize('NFKD', str(value))
+    text = ''.join(ch for ch in text if not unicodedata.combining(ch)).lower()
+    return re.sub(r'[^a-z0-9]', '', text)
 
 def clean_dates(df):
     # TODO phase 2
@@ -99,11 +107,80 @@ def clean_nominal(df):     # PULSOS, B2, SOPRO, HDA 1, HDA2, MOTIVO1, MOTIVO2, C
         df = standardize_labels(df, col, mapping)
     return df
 
-
 def clean_ordinal(df):     # PPA
     # TODO phase 2
     return df
 
+CONVENIO_RULES = [
+    (r'^cass', 'Cassi'),
+    (r'^(camed|acmed)', 'Camed'),
+    (r'^(amep|campe)', 'Amepe/Campe'),
+    (r'^media', 'Medial'),
+    (r'^(medi?s|mede?s|mers)', 'Mediservice'),
+    (r'^nor[cl]', 'Norclínicas'),
+    (r'^real', 'Real Saúde'),
+    (r'^(reemb|ree)', 'Reembolso'),
+    (r'^(ideal|odeal)', 'Ideal'),
+    (r'^fusex', 'Fusex'),
+    (r'^semep', 'Semepe'),
+    (r'^fun[cs]ef', 'Funcef'),
+    (r'^fac[hj]a?es', 'Fachesf'),
+    (r'^celpos', 'Celpos'),
+    (r'^(santa|sta)cl', 'Santa Clara'),
+    (r'^(santa|sta)lu', 'Santa Lúcia'),
+    (r'^(santa|sta|sant|st|s)h(e|er)', 'Santa Helena'),
+    (r'^(circ|ccor)', 'Círculo'),
+    (r'^cort', 'Cortesia'),
+    (r'^(corr|core)', 'Correios'),
+    (r'^(part|patrt)', 'Particular'),
+    (r'^petro(b|f$|$)', 'Petrobras'),
+    (r'^embr', 'Embratel'),
+    (r'^blu', 'Bluelife'),
+    (r'^(caixa|saudecaixa|scaixa|scx)', 'Caixa'),
+    (r'^gama', 'Gama'),
+    (r'^assef', 'Assefaz'),
+    (r'^fisco', 'Fisco'),
+    (r'^(tab|tba)', 'Tabela'),
+    (r'^(sul|samer|ameri)', 'Sul América'),
+    (r'^((saude|s)rec|saudere)', 'Saúde Recife'),
+    (r'^(saude|s)?b[ar]+desco', 'Bradesco Saúde'),
+    (r'^(urec|unrec|unimrec|unimedr)', 'Unimed Recife'),
+]
+MIN_ROWS_CONVENIO = 30
+
+def clean_convenio(df):
+    print("\nConvenio")
+    original = df['Convenio']
+    text = original.astype('string').str.strip()
+
+    # numbers are not insurers
+    is_number = text.str.fullmatch(r'\d+(\.0+)?').fillna(False)
+
+    # normalise and group the families
+    def standardize(value):
+        key = compact_text(value)
+        for pattern, label in CONVENIO_RULES:
+            if re.match(pattern, key):
+                return label
+        return key.upper()
+
+    new = text.map(standardize, na_action='ignore').astype('string')
+    new[is_number] = pd.NA
+
+    print(f"  Convenio: {original.nunique()} unique values -> {new.nunique()}")
+    print(f"  Numbers (not insurers) set to missing: {is_number.sum()}")
+    print(f"  Missing after cleaning: {new.isna().sum()} ({new.isna().mean() * 100:.2f}%)")
+    df['Convenio'] = new
+
+    # Stage 4: new column with the rare insurers grouped
+    counts = new.value_counts()
+    rare = counts[counts < MIN_ROWS_CONVENIO].index
+    df['Convenio_group'] = new.where(~new.isin(rare), 'Outro')
+    print(f"  Convenio_group: {df['Convenio_group'].nunique()} unique values "
+          f"(insurers with < {MIN_ROWS_CONVENIO} rows -> 'Outro': "
+          f"{(df['Convenio_group'] == 'Outro').sum()} rows)")
+    print(df['Convenio_group'].value_counts(dropna=False).head(15).to_string())
+    return df
 
 def clean_categorical(df):
     print("\n\nCleaning categorical and date variables")
@@ -111,6 +188,7 @@ def clean_categorical(df):
     df = clean_binary(df)
     df = clean_nominal(df)
     df = clean_ordinal(df)
+    df = clean_convenio(df)
     return df
 
 
