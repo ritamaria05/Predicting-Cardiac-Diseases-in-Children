@@ -11,7 +11,7 @@ OUT_PATH = os.path.join(OUT_DIR, "UCMF_cleaned.csv")
 # SECTION A: NUMERICAL VARIABLES
 # Columns: IDADE, Peso, Altura, IMC, PA SISTOLICA, PA DIASTOLICA, FC
 def clean_numerical(df):
-    print("\nCleaning numerical variables")
+    print("\n\nCleaning numerical variables")
     return df
 
 
@@ -34,6 +34,14 @@ def standardize_labels(df, col, mapping):
     df[col] = new
     return df
 
+def make_map(labels, variants=None):
+    """Build the mapping from a list of standard labels (and optional extra variants).
+    variants: {lowercase variant: standard label}"""
+    mapping = {label.lower(): label for label in labels}
+    if variants:
+        mapping.update(variants)
+    return mapping
+
 def clean_dates(df):
     # TODO phase 2
     return df
@@ -55,7 +63,40 @@ def clean_binary(df):      # SEXO, NORMAL X ANORMAL
     return df
 
 def clean_nominal(df):     # PULSOS, B2, SOPRO, HDA 1, HDA2, MOTIVO1, MOTIVO2, Convenio
-    # TODO phase 2
+    print("\nNominal variables")
+
+    pulsos = ['Normais', 'Amplos', 'Outro', 'Femorais diminuidos', 'Diminuídos']
+
+    b2 = ['Normal', 'Hiperfonética', 'Desdob fixo', 'Outro', 'Única']
+
+    sopro = ['Ausente', 'Sistólico', 'Contínuo', 'Diastólico', 'Sistólico e diastólico']
+    sopro_variants = {'sistolico e diastólico': 'Sistólico e diastólico'}  # missing accent
+
+    hda = ['Assintomático', 'Dor precordial', 'Dispneia', 'Palpitacao', 'Cianose',
+           'Desmaio/tontura', 'Outro', 'Ganho de peso']
+
+    motivo1 = ['5 - Parecer cardiológico', '6 - Suspeita de cardiopatia',
+               '1 - Cardiopatia já estabelecida', '2 - Check-up', '7 - Outro']
+
+    motivo2 = ['5 - Cirurgia', '6 - Sopro', '1 - Cardiopatia congenica',
+               '5 - Atividade física', '7 - Outro', '6 - Dor precordial',
+               '6 - Palpitação/taquicardia/arritmia', '6 - HAS/dislipidemia/obesidade',
+               '6 - Dispnéia', '6 - Cianose', '1 - Cardiopatia adquirida',
+               '6 - Cardiopatia na familia', '6 - Cansaço', '5 - Uso de cisaprida',
+               '6 - Alterações de pulso/perfusão', '6 - Cianose e dispnéia']
+    motivo2_variants = {'outro': '7 - Outro'}
+
+    mappings = {
+        'PULSOS':  make_map(pulsos),
+        'B2':      make_map(b2),
+        'SOPRO':   make_map(sopro, sopro_variants),
+        'HDA 1':   make_map(hda),
+        'HDA2':    make_map(hda),
+        'MOTIVO1': make_map(motivo1),
+        'MOTIVO2': make_map(motivo2, motivo2_variants),
+    }
+    for col, mapping in mappings.items():
+        df = standardize_labels(df, col, mapping)
     return df
 
 
@@ -65,7 +106,7 @@ def clean_ordinal(df):     # PPA
 
 
 def clean_categorical(df):
-    print("\nCleaning categorical and date variables")
+    print("\n\nCleaning categorical and date variables")
     df = clean_dates(df)
     df = clean_binary(df)
     df = clean_nominal(df)
