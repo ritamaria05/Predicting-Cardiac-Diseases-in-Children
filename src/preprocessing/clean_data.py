@@ -4,7 +4,11 @@ import unicodedata
 import re
 import pandas as pd
 import numpy as np
-from mappings import ANOMALY_LOOKUP, CONVENIO_LOOKUP, DN_MANUAL_FIXES, DN_TO_AGE_MAPPING, SEX_LOOKUP
+from mappings import (
+    ANOMALY_LOOKUP, BOUNDS_BY_AGE, CONVENIO_LOOKUP,
+    DN_MANUAL_FIXES, DN_TO_AGE_MAPPING, SEX_LOOKUP,
+    get_bounds_by_age
+)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_PATH = os.path.join(ROOT, 'UCMF(5).xls')
@@ -114,21 +118,135 @@ def clean_age(df, max_age=20):
     '''Clean age column, converting to numeric and handling invalid values.'''
     df = df.copy()
     original_age = pd.to_numeric(df['idade'], errors='coerce')
-    valid_dates = df['data_nascimento'].notna() & df['atendimento'].notna()
-    calculated_age = (df.loc[valid_dates, 'atendimento'] - df.loc[valid_dates, 'data_nascimento']
-                      ).dt.days / 365.25
-    # update ages
-    merged_age = original_age.copy()
-    needs_update = (
-        merged_age.isna()
-        | (merged_age < 0)
-        | (merged_age > max_age)
-        | ((merged_age - calculated_age).abs() > 0.5)
-    )
-    merged_age.loc[valid_dates & needs_update] = calculated_age.loc[valid_dates & needs_update]
-    merged_age = merged_age.where(merged_age.between(0, max_age), np.nan).round(2)
-    df['idade'] = merged_age
+    original_age = normalize_numbers(original_age)
+    calc = (df['atendimento'] - df['data_nascimento']).dt.days / 365.25
+    use_calc = calc.between(0, max_age)
+    merged = original_age.where(~use_calc, calc)
+    merged = merged.where(~(calc < 0))          # visit before birth: dates are wrong
+    df['idade'] = merged.where(merged.between(0, max_age)).round(2)
+    df['idade_origem'] = np.where(use_calc, 'calculada', np.where(df[
+        'idade'].notna(), 'declarada', 'ausente'))
+
     return df
+
+def normalize_numbers(series: pd.Series, allow_ranges: bool = False) -> pd.Series:
+    '''convert commas into dots and remove non-numeric characters from numeric columns
+    turn intervals into its mean value.'''
+    if pd.api.types.is_numeric_dtype(series): # already numeric, return as float
+        return series.astype(float)
+
+    s = series.astype(str).str.strip().str.lower() # convert to string and lowercase for uniformity
+    # null tokens to np.nan
+    null_tokens = {"", "nan", "none", "null", "na", "n/a", "-", "--", "nd", "s/d", "#value!"}
+    s = s.where(~s.isin(null_tokens), other=np.nan)
+    # comma to dots
+    s = s.str.replace(",", ".", regex=False)
+    # ranges that are present in FC
+    if allow_ranges:
+        range_pattern = r"^\s*(\d+(?:\.\d+)?)\s*(?:a|-)\s*(\d+(?:\.\d+)?)\s*$"
+        extracted = s.str.extract(range_pattern)
+        is_range = extracted[0].notna() & extracted[1].notna()
+        if is_range.any():
+            mean_vals = (extracted.loc[is_range, 0].astype(float
+            ) + extracted.loc[is_range, 1].astype(float)) / 2.0
+            s.loc[is_range] = mean_vals.astype(str)
+
+    # Remove units and trailing whitespace
+    s = s.str.replace(r"\s*(kg|cm|m|mmhg|cmhg|bpm)\s*$", "", regex=True)
+
+    return pd.to_numeric(s, errors="coerce")
+
+def clean_peso_altura(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean weight, height, and BMI columns, converting to numeric and handling invalid values."""
+    df = df.copy()
+
+    peso = normalize_numbers(df["peso"])
+    altura = normalize_numbers(df["altura"])
+    imc = normalize_numbers(df["imc"])
+    idade = normalize_numbers(df["idade"])
+    # apply biological plausibility bounds
+    p_min, p_max = get_bounds_by_age(idade, BOUNDS_BY_AGE["peso"])
+    a_min, a_max = get_bounds_by_age(idade, BOUNDS_BY_AGE["altura"])
+    bad_p = peso.notna() & ~peso.between(p_min, p_max)
+    bad_a = altura.notna() & ~altura.between(a_min, a_max)
+    imc_calc = peso / (altura / 100) ** 2
+    g_p = BOUNDS_BY_AGE["peso"]["unknown"]
+    g_a = BOUNDS_BY_AGE["altura"]["unknown"]
+    age_suspect = (bad_p | bad_a) & peso.gt(0) & altura.gt(0) & imc_calc.between(
+        10, 40) & peso.between(*g_p) & altura.between(*g_a)
+    df.loc[age_suspect, "idade"] = np.nan
+    df["idade_suspeita"] = age_suspect
+    peso[bad_p & ~age_suspect] = np.nan
+    altura[bad_a & ~age_suspect] = np.nan
+    imc.loc[imc.notna() & ~imc.between(6.0, 100.0)] = np.nan
+
+    # recalculate IMC consistently whenever both cleaned weight and height are valid
+    valid_pa = peso.notna() & altura.notna()
+    imc.loc[valid_pa] = (peso.loc[valid_pa] / ((altura.loc[valid_pa] / 100.0) ** 2)).round(2)
+    isolated_imc = ~valid_pa & altura.notna() & ~imc.between(6.0, 100.0)
+    imc.loc[isolated_imc] = np.nan
+
+    df["peso"] = peso
+    df["altura"] = altura
+    imc = imc.where(peso.notna() & altura.notna())
+    df["imc"] = imc
+
+    return df
+
+def clean_pa_fc(df: pd.DataFrame) -> pd.DataFrame:
+    '''Clean blood pressure and heart rate columns, applying biological
+    plausibility bounds and consistency checks.'''
+    df = df.copy()
+    pa_sistolica = normalize_numbers(df["pa_sistolica"])
+    pa_diastolica = normalize_numbers(df["pa_diastolica"])
+    fc = normalize_numbers(df["fc"], allow_ranges=True)
+    idade = normalize_numbers(df["idade"])
+
+    pas_min, pas_max = get_bounds_by_age(idade, BOUNDS_BY_AGE["pa_sistolica"])
+    pad_min, pad_max = get_bounds_by_age(idade, BOUNDS_BY_AGE["pa_diastolica"])
+    fc_min, fc_max = get_bounds_by_age(idade, BOUNDS_BY_AGE["fc"])
+
+    # biological plausibility bounds
+    pa_sistolica.loc[pa_sistolica.notna() & ~pa_sistolica.between(pas_min, pas_max)] = np.nan
+    pa_diastolica.loc[pa_diastolica.notna() & ~pa_diastolica.between(pad_min, pad_max)] = np.nan
+    fc.loc[fc.notna() & ~fc.between(fc_min, fc_max)] = np.nan
+
+    # pulse pressure (PP): DBP <= SBP - 5 and SBP - DBP <= 160
+    both_bp = pa_sistolica.notna() & pa_diastolica.notna()
+    invalid_pulse = both_bp & (
+        (pa_diastolica > (pa_sistolica - 5.0))
+        | ((pa_sistolica - pa_diastolica) > 160.0)
+    )
+    pa_sistolica.loc[invalid_pulse] = np.nan
+    pa_diastolica.loc[invalid_pulse] = np.nan
+
+    # pediatric shock index (PSI): 0.15 <= PSI <= 5.0
+    psi = fc / pa_sistolica
+    invalid_psi = psi.notna() & ~psi.between(0.15, 5.0)
+    pa_sistolica.loc[invalid_psi] = np.nan
+    pa_diastolica.loc[invalid_psi] = np.nan
+    fc.loc[invalid_psi] = np.nan
+
+    df["pa_sistolica"] = pa_sistolica
+    df["pa_diastolica"] = pa_diastolica
+    df["fc"] = fc
+
+    return df
+
+def remove_empty_rows(df, min_fields=3):
+    '''Remove rows that have fewer than a specified number of non-null fields in key columns.'''
+    # id is always present
+    # sexo isn't that useful in the records so that it can't be missing
+    # imc comes from weight and height
+    # pa_diastolica pairs with pa_sistolica, so if one is present the other should be too
+    # ppa is derived from bp and also holds "NAO CALCULADO"
+    # hda_2 and motivo 2 dont carry extra information if hda_1 and motivo_1 are present
+    # dates are summarized by age
+    info_cols = ["idade", "peso", "altura", "pa_sistolica", "fc", "normal_x_anormal",
+                 "sopro", "b2", "pulsos", "convenio", "hda_1", "motivo_1"]
+    empty = df[info_cols].notna().sum(axis=1) < min_fields
+    print(f"  Removing {empty.sum()} nearly empty rows")
+    return df[~empty].reset_index(drop=True)
 
 # dealing with duplicate rows/objects
 def remove_duplicates(df):
@@ -137,25 +255,12 @@ def remove_duplicates(df):
     # step 1: check for 100% duplicate rows
     print(f"  Removing {df.duplicated().sum()} duplicate rows")
     df = df.drop_duplicates()
-    # step 2: check for duplicate IDs on the same date (keep the first one)
-    if {"id", "atendimento"}.issubset(df.columns):
-        valid_visit_key = df["id"].notna() & df["atendimento"].notna()
-        same_visit_mask = df.duplicated(subset=["id", "atendimento"],
-                                        keep="first") & valid_visit_key
-        print(f"  Removing {same_visit_mask.sum()} duplicate visits (same id and atendimento)")
-        df = df[~same_visit_mask]
-    # step 3: check for duplicates where two patients share
-    # identical clinical and demographic data, with different or missing 'id'
+    # step 2: check for duplicate rows with same features but different IDs
     non_id_cols = [col for col in df.columns if col != "id"]
-    quasi_id_cols = [c for c in ["data_nascimento", "atendimento",
-                                 "peso", "altura", "pa_sistolica", "pa_diastolica",
-                                 "fc"] if c in df.columns]
-    has_quasi_id = df[quasi_id_cols].notna().any(axis=1)
-
-    feature_dups_mask = df.duplicated(subset=non_id_cols, keep="first") & has_quasi_id
+    strong_key = df["data_nascimento"].notna() & df["atendimento"].notna()
+    feature_dups_mask = df.duplicated(subset=non_id_cols, keep="first") & strong_key
     print(f"  Removing {feature_dups_mask.sum()} non-ID full-record duplicate rows")
     df = df[~feature_dups_mask].reset_index(drop=True)
-
     print(f"  Total duplicate rows removed: {initial_rows - len(df)}")
     return df
 
@@ -172,7 +277,7 @@ def normalize_text_key(series: pd.Series) -> pd.Series:
         )
         s = re.sub(r"[./;]", " ", s)
         s = re.sub(r"\s+", " ", s).strip()
-        return np.nan if s in {"", "NAN", "NONE", "NULL", "NA", "?"} else s
+        return np.nan if s in {"", "NAN", "NONE", "NULL", "NA", "?", "#VALUE!"} else s
 
     return series.map(_clean)
 
@@ -256,7 +361,7 @@ def clean_sexo(df):
     '''Normalize text in the 'sexo' column.'''
     s = normalize_text_key(df["sexo"])
     s = s.replace(SEX_LOOKUP)
-    df["sexo"] = s
+    df["sexo"] = s.where(s.isin({"M", "F"}))
     return df
 
 # motivo normalization: applying text normalization
@@ -294,7 +399,9 @@ def main():
     df = recover_dates_from_convenio(df)
     #4 Clean age
     df = clean_age(df)
-    #5 rest of num features
+    #5 Clean numeric features
+    df = clean_peso_altura(df)
+    df = clean_pa_fc(df)
     #6 Clean categorical features
     df = clean_convenio(df)
     df = clean_pulsos(df)
@@ -305,7 +412,9 @@ def main():
     df = clean_hda(df)
     df = clean_sexo(df)
     df = clean_motivo(df)
-    #7 Remove duplicates
+    #7 remove empty rows
+    df = remove_empty_rows(df)
+    #8 Remove duplicates
     df = remove_duplicates(df)
 
     os.makedirs(OUT_DIR, exist_ok=True)

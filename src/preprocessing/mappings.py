@@ -1,4 +1,5 @@
-import numpy as np
+'''Mapping dictionaries for preprocessing the data.'''
+import pandas as pd
 CONVENIO_MAPPING = {
     "UNIMED RECIFE": ["UR", "U RECIFE", "UNIM RECIFE", "UNIMED REC", "UNIMED RECIFE",
                       "UNIMED R", "UNIMED RE", "UN RECIFE", "URECIFE"],
@@ -179,3 +180,72 @@ DN_MANUAL_FIXES = {
     "05/07/097": "05/07/1997",
     "30/0797": "30/07/1997"
 }
+
+AGE_BINS = [0.0, 0.25,1.0,3.0,7.0,12.0,18.0,20.0]
+AGE_LABELS = ["0-3m", "3-12m", "1-3a", "3-7a", "7-12a", "12-18a", "18-20a"]
+
+BOUNDS_BY_AGE = {
+    "peso": {
+        "0-3m": (0.4, 12.0),
+        "3-12m": (2.0, 22.0),
+        "1-3a": (3.5, 40.0),
+        "3-7a": (6.0, 80.0),
+        "7-12a": (10.0, 150.0),
+        "12-18a": (15.0, 230.0),
+        "18-20a": (18.0, 250.0),
+        "unknown": (0.4, 250.0), # caso a idade seja NaN
+    },
+    "altura": {
+        "0-3m": (25.0, 75.0),
+        "3-12m": (30.0, 100.0),
+        "1-3a": (36.0, 135.0),
+        "3-7a": (42.0, 180.0),
+        "7-12a": (48.0, 225.0),
+        "12-18a": (54.0, 265.0),
+        "18-20a": (54.0, 273.0),
+        "unknown": (25.0, 273.0), # caso a idade seja NaN
+    },
+    "pa_sistolica": {
+        "0-3m": (20.0, 180.0),
+        "3-12m": (20.0, 250.0),
+        "1-3a": (20.0, 300.0),
+        "3-7a": (20.0, 300.0),
+        "7-12a": (20.0, 300.0),
+        "12-18a": (20.0, 300.0),
+        "18-20a": (20.0, 300.0),
+        "unknown": (20.0, 300.0), # caso a idade seja NaN
+    },
+    "pa_diastolica": {
+        "0-3m": (10.0, 140.0),
+        "3-12m": (10.0, 180.0),
+        "1-3a": (10.0, 200.0),
+        "3-7a": (10.0, 200.0),
+        "7-12a": (10.0, 200.0),
+        "12-18a": (10.0, 200.0),
+        "18-20a": (10.0, 200.0),
+        "unknown": (10.0, 200.0), # caso a idade seja NaN
+    },
+    "fc": {
+        "0-3m": (20.0, 320.0),
+        "3-12m": (20.0, 320.0),
+        "1-3a": (20.0, 300.0),
+        "3-7a": (20.0, 300.0),
+        "7-12a": (15.0, 300.0),
+        "12-18a": (15.0, 300.0),
+        "18-20a": (15.0, 300.0),
+        "unknown": (15.0, 320.0), # caso a idade seja NaN
+    }
+}
+
+
+def get_bounds_by_age(age_series, bounds_dict):
+    '''Get the lower and upper bounds for a given age series and variable.
+    can be: "peso" or "altura"'''
+    age_groups = (
+        pd.cut(age_series, bins=AGE_BINS, labels=AGE_LABELS, right=False)
+        .astype(object)
+        .fillna("unknown")
+    )
+    lowers = age_groups.map({k: v[0] for k, v in bounds_dict.items()}).astype(float)
+    uppers = age_groups.map({k: v[1] for k, v in bounds_dict.items()}).astype(float)
+    return lowers, uppers
