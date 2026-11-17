@@ -4,7 +4,7 @@ import unicodedata
 import re
 import pandas as pd
 import numpy as np
-from mappings import CONVENIO_MAPPING, CONVENIO_LOOKUP
+from mappings import ANOMALY_LOOKUP, CONVENIO_LOOKUP, SEX_LOOKUP
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_PATH = os.path.join(ROOT, 'UCMF(5).xls')
@@ -86,18 +86,107 @@ def normalize_text_key(series: pd.Series) -> pd.Series:
     return series.map(_clean)
 
 # convenio normalization: group rare insurers into "Outro" and standardize common ones
-def clean_convenio(df, min_freq: int = 5):
-    '''Normalize text and group insurers according to name similarity.'''
+def clean_convenio(df):
+    '''Normalize text, group insurers according to name similarity and remove numbers.'''
     s = normalize_text_key(df["convenio"])
     s = s.where(~s.str.isdigit().fillna(False), np.nan)
-    s = s.replace(CONVENIO_LOOKUP)
-    counts = s.value_counts()
-    return s.where(s.isin(counts[counts >= min_freq].index), "OUTROS")
+    df["convenio"] = s.replace(CONVENIO_LOOKUP)
+    return df
     # numbers in convenio should be analysed separately,
     # as they may represent dates that are wrongly misplaced in the convenio column
     # the best option is to treat the dates before the convenio,
     # so that the numbers present are not misinterpreted as convenio values
-    
+
+# pulsos normalization: applying text normalization
+def clean_pulsos(df):
+    '''Normalize text in the 'pulsos' column.'''
+    df["pulsos"] = normalize_text_key(df["pulsos"])
+    return df
+
+# ppa normalization: applying text normalization
+def clean_ppa(df):
+    '''Normalize text in the 'ppa' column and remove #VALUE! entries.'''
+    s = normalize_text_key(df["ppa"])
+    df["ppa"] = s.replace("#VALUE!", np.nan)
+    return df
+
+# normal x anormal normalization: applying text normalization
+def clean_normal_x_anormal(df):
+    '''Normalize text in the 'normal_x_anormal' column.'''
+    s = normalize_text_key(df["normal_x_anormal"])
+    s = s.replace(ANOMALY_LOOKUP)
+    df["normal_x_anormal"] = s
+    return df
+
+# b2 normalization: applying text normalization
+def clean_b2(df):
+    '''Normalize text in the 'b2' column.'''
+    df["b2"] = normalize_text_key(df["b2"])
+    return df
+
+# sopro normalization: applying text normalization
+def clean_sopro(df):
+    '''Normalize text in the 'sopro' column.'''
+    df["sopro"] = normalize_text_key(df["sopro"])
+    return df
+
+# hda normalization: applying text normalization and specific rules for missing values
+def clean_hda(df):
+    '''Normalize text in the 'hda_1' and 'hda_2' columns
+    and apply specific rules to handle missing values and inconsistencies.'''
+    df["hda_1"] = normalize_text_key(df["hda_1"])
+    df["hda_2"] = normalize_text_key(df["hda_2"])
+    # se hda_2 == NaN  and hda_1 != NaN -> hda_2 = "NENHUM"
+    # Se hda_1 == NaN e hda_2 != NaN -> promove hda_2 para hda_1
+    mask = df["hda_1"].isna() & df["hda_2"].notna()
+    df.loc[mask, "hda_1"] = df.loc[mask, "hda_2"]
+    df.loc[mask, "hda_2"] = np.nan
+
+    # hda_1 == "ASSINTOMATICO" mas hda_2 tem sintoma real -> promove hda_2
+    mask = (
+        (df["hda_1"] == "ASSINTOMATICO")
+        & df["hda_2"].notna()
+        & (df["hda_2"] != "ASSINTOMATICO")
+    )
+    df.loc[mask, "hda_1"] = df.loc[mask, "hda_2"]
+    df.loc[mask, "hda_2"] = np.nan
+
+    # Remover redundâncias em hda_2 (igual a "ASSINTOMATICO" ou igual a hda_1)
+    redundant = (df["hda_2"] == "ASSINTOMATICO") | (df["hda_2"] == df["hda_1"])
+    df.loc[redundant, "hda_2"] = np.nan
+
+    # Preencher "NENHUM" em hda_2 sempre que hda_1 esteja preenchido
+    mask = df["hda_1"].notna() & df["hda_2"].isna()
+    df.loc[mask, "hda_2"] = "NENHUM"
+    return df
+
+# sexo normalization: applying text normalization
+def clean_sexo(df):
+    '''Normalize text in the 'sexo' column.'''
+    s = normalize_text_key(df["sexo"])
+    s = s.replace(SEX_LOOKUP)
+    df["sexo"] = s
+    return df
+
+# motivo normalization: applying text normalization
+def clean_motivo(df):
+    '''Normalize text in the 'motivo_1' and 'motivo_2' columns.'''
+    df["motivo_1"] = normalize_text_key(df["motivo_1"])
+    df["motivo_2"] = normalize_text_key(df["motivo_2"])
+    # se motivo_1 == NaN e motivo_2 != NaN, motivo_1 = motivo_2 e motivo_2 = "NENHUM"
+    mask = df["motivo_1"].isna() & df["motivo_2"].notna()
+    if mask.any():
+        df.loc[mask, "motivo_1"] = df.loc[mask, "motivo_2"]
+        df.loc[mask, "motivo_2"] = "NENHUM"
+    # se motivo_1 == motivo_2 , motivo_1 != NaN, motivo_2 = "NENHUM"
+    mask = df["motivo_1"] == df["motivo_2"]
+    if mask.any():
+        df.loc[mask & df["motivo_1"].notna(), "motivo_2"] = "NENHUM"
+    # se motivo_1 != NaN e motivo_2 == NaN, motivo_2 = "NENHUM"
+    mask = df["motivo_1"].notna() & df["motivo_2"].isna()
+    if mask.any():
+        df.loc[mask, "motivo_2"] = "NENHUM"
+    return df
 
 # NUMERICAL VARIABLES
 # Columns: IDADE, Peso, Altura, IMC, PA SISTOLICA, PA DIASTOLICA, FC

@@ -69,4 +69,20 @@ CONVENIO_MAPPING = {
         "TAB UR"]
 }
 
-CONVENIO_LOOKUP = {variant: canonical for canonical, variants in CONVENIO_MAPPING.items() for variant in variants}
+CONVENIO_LOOKUP = {variant: canonical for canonical, variants in CONVENIO_MAPPING.items(
+    ) for variant in variants}
+
+ANOMALY_MAPPING = {
+    "NORMAL": ["NORMAL", "NORMAIS"]
+}
+
+ANOMALY_LOOKUP = {variant: canonical for canonical, variants in ANOMALY_MAPPING.items(
+    ) for variant in variants}
+
+SEX_MAPPING = {
+    "M": ["M", "MASCULINO"],
+    "F": ["F", "FEMININO"]
+}
+
+SEX_LOOKUP = {variant: canonical for canonical, variants in SEX_MAPPING.items(
+    ) for variant in variants}
