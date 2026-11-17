@@ -92,3 +92,45 @@ for col in cat_cols:
     
 numeric_mask = df["Convenio"].astype(str).str.strip().str.isdigit()
 print(df.loc[numeric_mask, ["ID", "Atendimento", "DN", "Convenio", "SEXO", "IDADE"]])
+
+
+def inspect_date_patterns(series: pd.Series) -> pd.Series:
+    s = series.dropna().astype(str).str.strip()
+    patterns = (
+        s.str.replace(r"\d", "9", regex=True)
+         .str.replace(r"[a-zA-Z]", "A", regex=True)
+    )
+    return patterns.value_counts()
+
+print("--- Atendimento ---")
+print(inspect_date_patterns(df["Atendimento"]))
+
+print("\n--- DN ---")
+print(inspect_date_patterns(df["DN"]))
+
+s_dn = df["DN"].dropna().astype(str).str.strip()
+
+# Padrões válidos: DD/MM/AA, D/M/AAAA ou serial de 5 dígitos
+valid_mask = s_dn.str.match(r"^(\d{1,2}/\d{1,2}/\d{2}(\d{2})?|\d{5})$")
+
+anomalous_idx = s_dn[~valid_mask].index
+print(df.loc[anomalous_idx, ["Atendimento", "DN", "IDADE"]].to_string())
+
+conv_nums = pd.to_numeric(df["Convenio"].astype(str).str.strip(), errors="coerce")
+serial_mask = conv_nums.between(20000, 45000)
+
+recovered_dates = pd.to_datetime(conv_nums[serial_mask], unit="D", origin="1899-12-30")
+debug_df = df.loc[serial_mask, ["Atendimento", "DN", "IDADE", "Convenio"]].copy()
+debug_df["data_recuperada"] = recovered_dates
+print(debug_df.to_string())
+
+#check if ID is unique
+id_counts = df["ID"].value_counts()
+duplicate_ids = id_counts[id_counts > 1]
+if not duplicate_ids.empty:
+    print("\nDuplicate IDs found:")
+    print(duplicate_ids.to_string())
+# check for abnormal ids
+if not df["ID"].between(1, 100000).all():
+    print("\nAbnormal IDs found:")
+    print(df.loc[~df["ID"].between(1, 100000), ["ID", "Atendimento", "DN"]].to_string())

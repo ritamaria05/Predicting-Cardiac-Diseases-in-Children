@@ -4,7 +4,7 @@ import unicodedata
 import re
 import pandas as pd
 import numpy as np
-from mappings import ANOMALY_LOOKUP, CONVENIO_LOOKUP, SEX_LOOKUP
+from mappings import ANOMALY_LOOKUP, CONVENIO_LOOKUP, DN_MANUAL_FIXES, DN_TO_AGE_MAPPING, SEX_LOOKUP
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_PATH = os.path.join(ROOT, 'UCMF(5).xls')
@@ -37,6 +37,97 @@ def rename_columns(df):
         'MOTIVO1': 'motivo_1',
         'MOTIVO2': 'motivo_2',
     })
+    return df
+
+def normalize_dates(series: pd.Series, max_valid_year: int = 2025) -> pd.Series:
+    '''Parse a pandas Series of dates,
+    handling Excel serial numbers, two-digit years,
+    and future dates.'''
+    raw = (series.astype('string')
+           .str.strip()
+           .str.replace(r"[\\,]", "/", regex=True)
+           .str.replace(r"[*?]", "", regex=True)
+           .str.replace(r"/-", "/", regex=True)
+           .str.replace(r"/+", "/", regex=True)
+    )
+    # convert excel serial numbers to datetime
+    nums = pd.to_numeric(raw, errors='coerce')
+    serial_dates = pd.to_datetime(
+        nums.where(nums.between(10000,50000)),
+        unit='D',
+        origin='1899-12-30',
+        errors='coerce'
+    )
+    #DD/MM/AA to DD/MM/AAAA
+    text_dates = pd.to_datetime(
+        raw,
+        format='%d/%m/%y',
+        errors='coerce'
+    )
+    text_dates_4y = pd.to_datetime(
+        raw,
+        format='%d/%m/%Y',
+        errors='coerce'
+    )
+    parsed = serial_dates.fillna(text_dates).fillna(text_dates_4y)
+    # future dates
+    future_mask = parsed.dt.year > max_valid_year
+    parsed.loc[future_mask] = parsed.loc[future_mask] - pd.DateOffset(years=100)
+    return parsed
+
+def recover_dates_from_convenio(df):
+    '''Recover dates from convenio column if they are Excel serial numbers,
+    and fill missing dates in other columns.'''
+    df = df.copy()
+    conv_nums = pd.to_numeric(df["convenio"].astype("string").str.strip(), errors="coerce")
+    serial_mask = conv_nums.between(20000, 45000)
+    if not serial_mask.any():
+        return df
+    recovered_dates = pd.to_datetime(conv_nums.where(serial_mask), unit="D",
+                                     origin="1899-12-30", errors="coerce")
+
+    #1 data_nascimento missing, convenio has a date -> fill data_nascimento
+    fill_dn = (serial_mask & df["data_nascimento"].isna() & (df["atendimento"].isna() | (
+        df["atendimento"] >= recovered_dates)))
+    df.loc[fill_dn, "data_nascimento"] = recovered_dates.loc[fill_dn]
+
+    #2 atendimento missing, convenio has a date -> fill atendimento
+    fill_atendimento = (serial_mask & df["atendimento"].isna() & (df["data_nascimento"].isna() | (
+        df["data_nascimento"] <= recovered_dates)))
+    df.loc[fill_atendimento, "atendimento"] = recovered_dates.loc[fill_atendimento]
+    df.loc[serial_mask, "convenio"] = np.nan
+    return df
+
+def clean_dates(df):
+    '''apply mapping, normalization, and fix birth dates into age'''
+    df = df.copy()
+    dn_clean = df['data_nascimento'].astype("string").str.strip()
+    extract_age = dn_clean.map(DN_TO_AGE_MAPPING)
+    current_age = pd.to_numeric(df['idade'], errors='coerce')
+    df['idade'] = extract_age.fillna(current_age)
+    dn_clean = dn_clean.replace(DN_MANUAL_FIXES)
+    df['data_nascimento'] = normalize_dates(dn_clean)
+    df['atendimento'] = normalize_dates(df['atendimento'])
+    return df
+
+def clean_age(df, max_age=20):
+    '''Clean age column, converting to numeric and handling invalid values.'''
+    df = df.copy()
+    original_age = pd.to_numeric(df['idade'], errors='coerce')
+    valid_dates = df['data_nascimento'].notna() & df['atendimento'].notna()
+    calculated_age = (df.loc[valid_dates, 'atendimento'] - df.loc[valid_dates, 'data_nascimento']
+                      ).dt.days / 365.25
+    # update ages
+    merged_age = original_age.copy()
+    needs_update = (
+        merged_age.isna()
+        | (merged_age < 0)
+        | (merged_age > max_age)
+        | ((merged_age - calculated_age).abs() > 0.5)
+    )
+    merged_age.loc[valid_dates & needs_update] = calculated_age.loc[valid_dates & needs_update]
+    merged_age = merged_age.where(merged_age.between(0, max_age), np.nan).round(2)
+    df['idade'] = merged_age
     return df
 
 # dealing with duplicate rows/objects
@@ -188,145 +279,34 @@ def clean_motivo(df):
         df.loc[mask, "motivo_2"] = "NENHUM"
     return df
 
-# NUMERICAL VARIABLES
-# Columns: IDADE, Peso, Altura, IMC, PA SISTOLICA, PA DIASTOLICA, FC
-def clean_numerical(df):
-    print("\n\nCleaning numerical variables...")
-    return df
 
-
-# CATEGORICAL AND DATE VARIABLES
-# Columns: PULSOS, B2, SOPRO, HDA 1, HDA2, SEXO, MOTIVO1, MOTIVO2, Convenio, DN, Atendimento, PPA, NORMAL X ANORMAL
-def standardize_labels(df, col, mapping):
-    original = df[col]
-    key = original.astype('string').str.strip().str.lower()
-    new = key.map(mapping)
-
-    unmapped = original.notna() & new.isna()
-    if unmapped.any():
-        print(f"  [WARNING] {col}: values not in the mapping (kept as they are): "
-              f"{original[unmapped].unique().tolist()}")
-        new[unmapped] = original[unmapped]
-
-    changed = (original.notna() & (new != original)).fillna(False)
-    print(f"  {col}: {original.nunique()} unique values -> {new.nunique()}; "
-          f"{changed.sum()} values changed")
-    df[col] = new
-    return df
-
-def make_map(labels, variants=None):
-    """Build the mapping from a list of standard labels (and optional extra variants).
-    variants: {lowercase variant: standard label}"""
-    mapping = {label.lower(): label for label in labels}
-    if variants:
-        mapping.update(variants)
-    return mapping
-
-def compact_text(value):
-    """Lowercase, no accents, no spaces or punctuation: 'REAL S.' -> 'reals'"""
-    text = unicodedata.normalize('NFKD', str(value))
-    text = ''.join(ch for ch in text if not unicodedata.combining(ch)).lower()
-    return re.sub(r'[^a-z0-9]', '', text)
-
-def clean_dates(df):
-    # TODO phase 2
-    return df
-
-def clean_binary(df):      # SEXO, NORMAL X ANORMAL
-    print("\nBinary variables")
-
-    sex_map = {'m': 'M', 'masculino': 'M',
-               'f': 'F', 'feminino': 'F',
-               'indeterminado': 'Indeterminado'}
-    df = standardize_labels(df, 'SEXO', sex_map)
-
-    target_map = {'normal': 'Normal', 'normais': 'Normal',
-                  'anormal': 'Anormal'}
-    df = standardize_labels(df, 'NORMAL X ANORMAL', target_map)
-
-    for col in ['SEXO', 'NORMAL X ANORMAL']:
-        print(df[col].value_counts(dropna=False).to_string())
-    return df
-
-def clean_nominal(df):     # PULSOS, B2, SOPRO, HDA 1, HDA2, MOTIVO1, MOTIVO2, Convenio
-    print("\nNominal variables")
-
-    pulsos = ['Normais', 'Amplos', 'Outro', 'Femorais diminuidos', 'Diminuídos']
-
-    b2 = ['Normal', 'Hiperfonética', 'Desdob fixo', 'Outro', 'Única']
-
-    sopro = ['Ausente', 'Sistólico', 'Contínuo', 'Diastólico', 'Sistólico e diastólico']
-    sopro_variants = {'sistolico e diastólico': 'Sistólico e diastólico'}  # missing accent
-
-    hda = ['Assintomático', 'Dor precordial', 'Dispneia', 'Palpitacao', 'Cianose',
-           'Desmaio/tontura', 'Outro', 'Ganho de peso']
-
-    motivo1 = ['5 - Parecer cardiológico', '6 - Suspeita de cardiopatia',
-               '1 - Cardiopatia já estabelecida', '2 - Check-up', '7 - Outro']
-
-    motivo2 = ['5 - Cirurgia', '6 - Sopro', '1 - Cardiopatia congenica',
-               '5 - Atividade física', '7 - Outro', '6 - Dor precordial',
-               '6 - Palpitação/taquicardia/arritmia', '6 - HAS/dislipidemia/obesidade',
-               '6 - Dispnéia', '6 - Cianose', '1 - Cardiopatia adquirida',
-               '6 - Cardiopatia na familia', '6 - Cansaço', '5 - Uso de cisaprida',
-               '6 - Alterações de pulso/perfusão', '6 - Cianose e dispnéia']
-    motivo2_variants = {'outro': '7 - Outro'}
-
-    mappings = {
-        'PULSOS':  make_map(pulsos),
-        'B2':      make_map(b2),
-        'SOPRO':   make_map(sopro, sopro_variants),
-        'HDA 1':   make_map(hda),
-        'HDA2':    make_map(hda),
-        'MOTIVO1': make_map(motivo1),
-        'MOTIVO2': make_map(motivo2, motivo2_variants),
-    }
-    for col, mapping in mappings.items():
-        df = standardize_labels(df, col, mapping)
-    return df
-
-def clean_ordinal(df):     # PPA
-    print("\n-Ordinal variable (PPA)")
-    ppa = df['PPA'].astype('string').str.strip()
-
-    status = pd.Series('Calculated', index=df.index, dtype='string')
-    status[ppa == 'Não Calculado'] = 'Not calculated'
-    status[ppa == '#VALUE!'] = 'Excel error'
-    status[ppa.isna()] = 'Empty'
-    df['PPA_status'] = status
-
-    # 'Não Calculado' and '#VALUE!' are not blood pressure classes: set to missing
-    not_available = ppa.isin(['Não Calculado', '#VALUE!'])
-    df.loc[not_available, 'PPA'] = pd.NA
-    print(f"  'Não Calculado' and '#VALUE!' set to missing: {not_available.sum()}")
-
-    valid = ['Normal', 'Pre-Hipertensão PAS', 'Pre-Hipertensão PAD',
-             'HAS-1 PAS', 'HAS-1 PAD', 'HAS-2 PAS', 'HAS-2 PAD']
-    df = standardize_labels(df, 'PPA', make_map(valid))
-
-    print(f"  PPA missing after cleaning: {df['PPA'].isna().sum()} "
-          f"({df['PPA'].isna().mean() * 100:.2f}%)")
-    print(df['PPA_status'].value_counts().to_string())
-    print(df['PPA'].value_counts(dropna=False).to_string())
-    return df
-
-
-def clean_categorical(df):
-    print("\n\nCleaning categorical and date variables")
-    df = clean_dates(df)
-    df = clean_binary(df)
-    df = clean_nominal(df)
-    df = clean_ordinal(df)
-    df = clean_convenio(df)
-    return df
 
 
 def main():
+    '''Main function to execute the data cleaning process.'''
     df = pd.read_excel(RAW_PATH)
     print(f"Raw data: {df.shape[0]} rows, {df.shape[1]} columns")
-
-    df = clean_numerical(df.copy())
-    df = clean_categorical(df.copy())
+    #1 Rename columns
+    df = rename_columns(df)
+    #2 Clean dates
+    df = clean_dates(df)
+    #3 Recover dates from convenio
+    df = recover_dates_from_convenio(df)
+    #4 Clean age
+    df = clean_age(df)
+    #5 rest of num features
+    #6 Clean categorical features
+    df = clean_convenio(df)
+    df = clean_pulsos(df)
+    df = clean_ppa(df)
+    df = clean_normal_x_anormal(df)
+    df = clean_b2(df)
+    df = clean_sopro(df)
+    df = clean_hda(df)
+    df = clean_sexo(df)
+    df = clean_motivo(df)
+    #7 Remove duplicates
+    df = remove_duplicates(df)
 
     os.makedirs(OUT_DIR, exist_ok=True)
     df.to_csv(OUT_PATH, index=False)
