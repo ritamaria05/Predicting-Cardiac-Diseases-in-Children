@@ -1,28 +1,32 @@
+'''Numerical Variables Preliminary Analysis'''
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import seaborn as sns
-import os
 
-df = pd.read_excel('UCMF(5).xls')
+from load_data import get_input_path, load_dataset, tag_for, data_label, figure_path
+
+path = get_input_path("Preliminary analysis of numerical variables")
+df = load_dataset(path)
+tag = tag_for(path)
+label = data_label(tag)
 sns.set_theme(style="whitegrid", context="notebook")
-os.makedirs("figures", exist_ok=True)
 
-
-num_cols = ["IDADE", "Peso", "Altura", "IMC", "PA SISTOLICA", "PA DIASTOLICA", "FC"]
+num_cols = ["idade", "peso", "altura", "imc", "pa_sistolica", "pa_diastolica", "fc"]
 units = {
-    "IDADE": "years",
-    "Peso": "kg",
-    "Altura": "cm",
-    "IMC": "kg/m²",
-    "PA SISTOLICA": "mmHg",
-    "PA DIASTOLICA": "mmHg",
-    "FC": "bpm",    
+    "idade": "years",
+    "peso": "kg",
+    "altura": "cm",
+    "imc": "kg/m²",
+    "pa_sistolica": "mmHg",
+    "pa_diastolica": "mmHg",
+    "fc": "bpm",
 }
 
-# Convert columns to numeric, coercing errors to NaN (there are some in the dataset)
-df_num = pd.DataFrame({col: pd.to_numeric(df[col], errors="coerce") for col in num_cols})
+num_cols = [col for col in num_cols if col in df.columns]
+df_num = pd.DataFrame(
+    {col: pd.to_numeric(df[col], errors="coerce") for col in num_cols}
+)
 
 fig = plt.figure(figsize=(16, 15))
 outer_grid = gridspec.GridSpec(4, 2, wspace=0.22, hspace=0.45)
@@ -36,7 +40,6 @@ for i, col in enumerate(num_cols):
 
     s = df_num[col].dropna()
 
-    # histogram + density plot
     sns.histplot(
         s,
         bins=50,
@@ -50,7 +53,6 @@ for i, col in enumerate(num_cols):
         ax=ax_hist,
     )
 
-    # log scale for y-axis to better visualize the distribution of counts, especially for skewed data
     ax_hist.set_yscale("log")
     ax_hist.set_ylim(0.8, len(s) * 2.5)
     ax_hist.set_xlabel("")
@@ -61,7 +63,7 @@ for i, col in enumerate(num_cols):
     ax_hist.axvline(s.max(), color="#7570b3", linestyle=":", linewidth=1.2, label=f"Max: {s.max():.1f}")
 
     ax_hist.set_title(
-        f"{col} ({units[col]}) — Raw Data (n={len(s):,})",
+        f"{col} ({units[col]}) — {label} (n={len(s):,})",
         fontsize=10.5,
         fontweight="bold",
         loc="left",
@@ -70,7 +72,6 @@ for i, col in enumerate(num_cols):
     ax_hist.legend(fontsize=8, loc="upper right", frameon=True)
     plt.setp(ax_hist.get_xticklabels(), visible=False)
 
-    # boxplot 
     sns.boxplot(
         x=s,
         ax=ax_box,
@@ -85,6 +86,16 @@ for i, col in enumerate(num_cols):
 ax_empty = fig.add_subplot(outer_grid[7])
 ax_empty.axis("off")
 
-fig.suptitle("Visual Analysis of Numerical Variables with Raw Data (W/ Outliers)", fontsize=13.5, fontweight="bold", y=0.995)
-plt.savefig("figures/numerical_preliminary_analysis.png", dpi=200, bbox_inches="tight")
+suffix = " (W/ Outliers)" if tag == "raw" else ""
+fig.suptitle(
+    f"Visual Analysis of Numerical Variables with {label}{suffix}",
+    fontsize=13.5,
+    fontweight="bold",
+    y=0.995,
+)
+out = figure_path("numerical_preliminary_analysis", tag)
+plt.savefig(out, dpi=200, bbox_inches="tight")
 plt.close()
+
+print(f"Input: {path}")
+print(f"Saved: {out}")

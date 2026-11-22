@@ -1,3 +1,4 @@
+'''Categorical and Date Variables Preliminary Analysis'''
 import math
 import pandas as pd
 import numpy as np

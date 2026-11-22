@@ -21,8 +21,8 @@ if pd.api.types.is_numeric_dtype(weight):
     print(f"Median value in the column: {weight.median():.2f}")
     print(f"25th percentile value in the column: {weight.quantile(0.25):.2f}")
     print(f"75th percentile value in the column: {weight.quantile(0.75):.2f}")
-    print(f"Interquartile range (IQR) in the column: {weight.quantile(
-        0.75) - weight.quantile(0.25):.2f}")
+    print(f"Interquartile range (IQR) in the column: "
+          f"{weight.quantile(0.75) - weight.quantile(0.25):.2f}")
     print(f"Skewness in the column: {weight.skew():.2f}")
     print(f"Zeros in the column: {(weight == 0).sum()}")
     print(f"Negative values in the column: {(weight < 0).sum()}")
@@ -46,8 +46,8 @@ if pd.api.types.is_numeric_dtype(height):
     print(f"Median value in the column: {height.median():.2f}")
     print(f"25th percentile value in the column: {height.quantile(0.25):.2f}")
     print(f"75th percentile value in the column: {height.quantile(0.75):.2f}")
-    print(f"Interquartile range (IQR) in the column: {height.quantile(
-        0.75) - height.quantile(0.25):.2f}")
+    print(f"Interquartile range (IQR) in the column: "
+          f"{height.quantile(0.75) - height.quantile(0.25):.2f}")
     print(f"Skewness in the column: {height.skew():.2f}")
     print(f"Zeros in the column: {(height == 0).sum()}")
     print(f"Negative values in the column: {(height < 0).sum()}")
@@ -127,8 +127,8 @@ else:
     print(f"Median value in the column: {age_numeric.median():.2f}")
     print(f"25th percentile value in the column: {age_numeric.quantile(0.25):.2f}")
     print(f"75th percentile value in the column: {age_numeric.quantile(0.75):.2f}")
-    print(f"Interquartile range (IQR) in the column: {age_numeric.quantile(
-        0.75) - age_numeric.quantile(0.25):.2f}")
+    print(f"Interquartile range (IQR) in the column: "
+          f"{age_numeric.quantile(0.75) - age_numeric.quantile(0.25):.2f}")
     print(f"Skewness in the column: {age_numeric.skew():.2f}")
     print(f"Zeros in the column: {(age_numeric == 0).sum()}")
     print(f"Negative values in the column: {(age_numeric < 0).sum()}")
@@ -152,8 +152,8 @@ if pd.api.types.is_numeric_dtype(pa_sistolic):
     print(f"Median value in the column: {pa_sistolic.median():.2f}")
     print(f"25th percentile value in the column: {pa_sistolic.quantile(0.25):.2f}")
     print(f"75th percentile value in the column: {pa_sistolic.quantile(0.75):.2f}")
-    print(f"Interquartile range (IQR) in the column: {pa_sistolic.quantile(
-        0.75) - pa_sistolic.quantile(0.25):.2f}")
+    print(f"Interquartile range (IQR) in the column: "
+          f"{pa_sistolic.quantile(0.75) - pa_sistolic.quantile(0.25):.2f}")
     print(f"Skewness in the column: {pa_sistolic.skew():.2f}")
     print(f"Zeros in the column: {(pa_sistolic == 0).sum()}")
     print(f"Negative values in the column: {(pa_sistolic < 0).sum()}")
@@ -177,8 +177,8 @@ if pd.api.types.is_numeric_dtype(pa_diastolic):
     print(f"Median value in the column: {pa_diastolic.median():.2f}")
     print(f"25th percentile value in the column: {pa_diastolic.quantile(0.25):.2f}")
     print(f"75th percentile value in the column: {pa_diastolic.quantile(0.75):.2f}")
-    print(f"Interquartile range (IQR) in the column: {pa_diastolic.quantile(
-        0.75) - pa_diastolic.quantile(0.25):.2f}")
+    print(f"Interquartile range (IQR) in the column: "
+          f"{pa_diastolic.quantile(0.75) - pa_diastolic.quantile(0.25):.2f}")
     print(f"Skewness in the column: {pa_diastolic.skew():.2f}")
     print(f"Zeros in the column: {(pa_diastolic == 0).sum()}")
     print(f"Negative values in the column: {(pa_diastolic < 0).sum()}")
@@ -219,8 +219,8 @@ else:
     print(f"Median value in the column: {fc_numeric.median():.2f}")
     print(f"25th percentile value in the column: {fc_numeric.quantile(0.25):.2f}")
     print(f"75th percentile value in the column: {fc_numeric.quantile(0.75):.2f}")
-    print(f"Interquartile range (IQR) in the column: {fc_numeric.quantile(
-        0.75) - fc_numeric.quantile(0.25):.2f}")
+    print(f"Interquartile range (IQR) in the column: "
+          f"{fc_numeric.quantile(0.75) - fc_numeric.quantile(0.25):.2f}")
     print(f"Skewness in the column: {fc_numeric.skew():.2f}")
     print(f"Zeros in the column: {(fc_numeric == 0).sum()}")
     print(f"Negative values in the column: {(fc_numeric < 0).sum()}")
