@@ -13,7 +13,7 @@ from mappings import (
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW_PATH = os.path.join(ROOT, 'UCMF(5).xls')
 OUT_DIR = os.path.join(ROOT, "data")
-OUT_PATH = os.path.join(OUT_DIR, "UCMF_cleaned.csv")
+OUT_PATH = os.path.join(OUT_DIR, "UCMF_cleaned_new.csv")
 
 # resolving inconsistencies
 def rename_columns(df):
@@ -244,7 +244,8 @@ def remove_empty_rows(df, min_fields=3):
     # dates are summarized by age
     info_cols = ["idade", "peso", "altura", "pa_sistolica", "fc", "normal_x_anormal",
                  "sopro", "b2", "pulsos", "convenio", "hda_1", "motivo_1"]
-    empty = df[info_cols].notna().sum(axis=1) < min_fields
+    info = df[info_cols].replace({"DESCONHECIDO": np.nan, "NAO REGISTADO": np.nan})
+    empty = info.notna().sum(axis=1) < min_fields
     print(f"  Removing {empty.sum()} nearly empty rows")
     return df[~empty].reset_index(drop=True)
 
@@ -287,6 +288,8 @@ def clean_convenio(df):
     s = normalize_text_key(df["convenio"])
     s = s.where(~s.str.isdigit().fillna(False), np.nan)
     df["convenio"] = s.replace(CONVENIO_LOOKUP)
+    # for missing values, use "DESCONHECIDO" instead of NaN
+    df["convenio"] = df["convenio"].fillna("DESCONHECIDO")
     return df
     # numbers in convenio should be analysed separately,
     # as they may represent dates that are wrongly misplaced in the convenio column
@@ -354,6 +357,10 @@ def clean_hda(df):
     # Preencher "NENHUM" em hda_2 sempre que hda_1 esteja preenchido
     mask = df["hda_1"].notna() & df["hda_2"].isna()
     df.loc[mask, "hda_2"] = "NENHUM"
+    
+    # Preencher "NAO REGISTADO" em hda_1 e hda_2 sempre que ambos estiverem ausentes
+    both_missing = df["hda_1"].isna() & df["hda_2"].isna()
+    df.loc[both_missing, ["hda_1", "hda_2"]] = "NAO REGISTADO"
     return df
 
 # sexo normalization: applying text normalization
@@ -382,10 +389,18 @@ def clean_motivo(df):
     mask = df["motivo_1"].notna() & df["motivo_2"].isna()
     if mask.any():
         df.loc[mask, "motivo_2"] = "NENHUM"
+    # se ambos os motivos estiverem ausentes, preencher com "NAO REGISTADO"
+    both_missing = df["motivo_1"].isna() & df["motivo_2"].isna()
+    df.loc[both_missing, ["motivo_1", "motivo_2"]] = "NAO REGISTADO"
     return df
 
 
 
+def remove_column(df, column_name):
+    '''Remove a specified column from the DataFrame if it exists.'''
+    if column_name in df.columns:
+        df = df.drop(columns=[column_name])
+    return df
 
 def main():
     '''Main function to execute the data cleaning process.'''
@@ -416,6 +431,8 @@ def main():
     df = remove_empty_rows(df)
     #8 Remove duplicates
     df = remove_duplicates(df)
+    # remove column ID - not useful for analysis
+    df = remove_column(df, "id")
 
     os.makedirs(OUT_DIR, exist_ok=True)
     df.to_csv(OUT_PATH, index=False)
