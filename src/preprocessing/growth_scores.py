@@ -283,7 +283,13 @@ def _to_date(s: pd.Series, fmt: str) -> pd.Series:
     if pd.api.types.is_datetime64_any_dtype(s):
         return s
     num = pd.to_numeric(s, errors="coerce")
-    from_num = pd.to_datetime(num, unit="D", origin="1899-12-30", errors="coerce").astype("datetime64[ns]")
+    # Excel serials for 1900-2100 are ~1 to 73050; anything else (or inf) is not a date and must
+    # not reach pd.to_datetime(unit="D"), which can overflow on newer pandas/numpy.
+    num = num.where((num > 0) & (num < 80000))
+    ok = num.notna().to_numpy()
+    vals = np.full(len(num), np.datetime64("NaT"), dtype="datetime64[ns]")
+    vals[ok] = np.datetime64("1899-12-30", "ns") + np.rint(num.to_numpy()[ok] * 86400e9).astype("int64").astype("timedelta64[ns]")
+    from_num = pd.Series(vals, index=s.index)
     txt = s.where(num.isna() & s.notna()).astype("string")
     from_txt = pd.to_datetime(txt, format=fmt, errors="coerce").astype("datetime64[ns]")
     return from_num.fillna(from_txt)

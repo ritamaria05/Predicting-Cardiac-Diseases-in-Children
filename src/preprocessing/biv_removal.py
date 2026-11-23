@@ -144,12 +144,49 @@ def export_review(df: pd.DataFrame, path: str, cols: list[str] | None = None) ->
     return r
 
 
-def apply_manual_decisions(df: pd.DataFrame, path: str) -> pd.DataFrame:
-    """Read the reviewed CSV back: rows with decision == 'remove' get biv_removed = True,
-    reason 'manual_review'.  Rows left blank or 'keep' stay in the data."""
+VALID_DECISIONS = {"remove", "keep", "blank_height", "blank_weight", ""}
+
+
+def _read_decisions(path: str) -> pd.DataFrame:
+    """Read the reviewed CSV: normalise `decision` (case/space-insensitive) and warn about typos."""
     d = pd.read_csv(path)
-    ids = d.loc[d["decision"].astype(str).str.lower().eq("remove"), "row_id"]
+    d["decision"] = d["decision"].fillna("").astype(str).str.strip().str.lower()
+    bad = d[~d["decision"].isin(VALID_DECISIONS)]
+    if len(bad):
+        print("WARNING: unrecognised decisions (ignored):", bad[["row_id", "decision"]].values.tolist())
+    return d
+
+
+def blank_manual_values(df: pd.DataFrame, path: str, *, height_col: str = "altura",
+                        weight_col: str = "peso") -> pd.DataFrame:
+    """Step 1 (BEFORE add_growth_scores): rows marked `blank_height` / `blank_weight` keep every
+    other value, but the impossible measure is set to NaN.  Because z-scores, percentiles, BMI
+    and BIV flags are recomputed afterwards, the row is scored from what is left.
+    Adds `blanked_value` ('', 'height', 'weight') so the change is auditable.  `row_id` is the
+    index of `df`, so pass the dataframe exactly as read from the CSV (default RangeIndex)."""
+    d = _read_decisions(path)
+    out = df.copy()
+    out["blanked_value"] = ""
+    for dec, col, label in (("blank_height", height_col, "height"), ("blank_weight", weight_col, "weight")):
+        ids = d.loc[d["decision"].eq(dec), "row_id"].astype(int)
+        ids = [i for i in ids if i in out.index]
+        out.loc[ids, col] = np.nan
+        out.loc[ids, "blanked_value"] = label
+        # an `imc` column already in the file would still carry the impossible value
+        if "imc" in out and ids:
+            out.loc[ids, "imc"] = np.nan
+        print(f"{len(ids)} rows: {label} blanked")
+    return out
+
+
+def apply_manual_decisions(df: pd.DataFrame, path: str) -> pd.DataFrame:
+    """Step 2 (AFTER add_biv_decision): rows with decision == 'remove' get biv_removed = True,
+    reason 'manual_review'.  'keep', blank or blank_* rows stay in the data (blank_* are handled
+    earlier by blank_manual_values)."""
+    d = _read_decisions(path)
+    ids = d.loc[d["decision"].eq("remove"), "row_id"].astype(int)
     out = df.copy()
     out.loc[ids, "biv_removed"] = True
     out.loc[ids, "biv_reason"] = "manual_review"
+    print(f"{len(ids)} rows removed by manual review")
     return out
