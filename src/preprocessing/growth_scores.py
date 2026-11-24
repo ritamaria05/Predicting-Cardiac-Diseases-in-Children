@@ -327,6 +327,9 @@ def add_growth_scores(df: pd.DataFrame, refs: dict, *, sex_col="SEXO", birth_col
     status[rd < 0] = "negative_age"
     status[out["age_days"].isna()] = "no_age"
     out["growth_status"] = status
+    # an age outside 0 to <20 y (dates in the wrong order, typos) is not a real age: do not keep it
+    # in the age columns (growth_status still says why).  Matches idade_origem == 'ausente'.
+    out.loc[status.isin(["negative_age", "age_20y_or_more"]), ["age_days", "age_months", "age_years"]] = np.nan
     use_who = (status == "scored") & (rd < WHO_MAX_DAYS)
     use_cdc = (status == "scored") & (rd >= WHO_MAX_DAYS)
     out["growth_ref"] = np.where(use_who, "WHO", np.where(use_cdc, "CDC", None))

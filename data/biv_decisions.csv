@@ -1,0 +1,189 @@
+row_id,decision,note
+4473,remove,No data
+13665,keep,I’m not so sure
+5864,remove,
+4546,keep,"I'm not sure, it’s possible but weird"
+9185,remove,
+3091,remove,
+3984,remove,No data
+2220,remove,No data
+2712,remove,
+12730,remove,No data
+16497,remove,No data
+10791,keep,Displidemia obesidade e ganho de peso
+13374,keep,
+3038,remove,Height inconsistent with weight
+5917,keep,
+4044,keep,
+11340,remove,
+3371,remove,
+7508,remove,
+15498,keep,
+6262,keep,
+5374,keep,
+3946,remove,
+12789,remove,
+2255,remove,
+3191,remove,
+13378,remove,
+5121,keep,
+10658,remove,
+1555,remove,
+10877,remove,
+11999,remove,
+15409,remove,
+3186,keep,
+5361,remove,
+13216,remove,
+12548,remove,
+3630,remove,
+13832,remove,
+8604,remove,
+7914,remove,
+1489,remove,
+6828,keep,
+3509,keep,
+7341,remove,
+2600,remove,
+3483,remove,
+12797,remove,
+2704,remove,
+7580,remove,
+9749,keep,
+267,keep,
+13194,remove,
+15149,remove,
+11212,remove,
+8845,remove,
+572,remove,
+8050,remove,
+1289,remove,
+16067,remove,
+10629,remove,
+12728,keep,
+9604,remove,
+14971,remove,
+14303,remove,
+13129,remove,
+2507,remove,
+1175,keep,
+10325,remove,
+15668,remove,
+12976,remove,
+1262,remove,
+2609,remove,
+10501,remove,
+5151,remove,
+13771,remove,
+3995,remove,
+5465,remove,
+8651,remove,
+3775,remove,
+70,remove,
+2286,remove,
+10092,remove,
+10770,remove,
+5296,keep,
+14421,remove,
+7463,remove,
+15800,remove,
+11190,remove,
+9308,remove,
+12911,remove,
+12912,remove,
+13738,remove,
+8551,remove,
+6489,remove,
+14377,remove,
+269,remove,
+6383,remove,
+5284,remove,
+6588,remove,
+2758,remove,
+5898,remove,
+6137,remove,
+1490,remove,
+74,remove,
+5631,blank_weight,"[Claude] 6.3 kg for a 49 cm newborn impossible: blank weight, keep row"
+6119,remove,
+9218,remove,
+13123,remove,
+14562,remove,
+7151,keep,
+1358,blank_height,"[Claude] 73 cm at 31 d impossible: blank height, keep row (HR 250 = neonatal SVT)"
+7296,keep,
+9576,keep,
+7012,remove,
+14642,keep,
+434,keep,
+453,keep,
+9508,remove,
+14277,keep,[Claude] Probable preterm: length+weight agree (whz 3.1); size-age ~0 vs 1.9 mo. WHO z not valid
+8025,keep,[Claude] Probable preterm (cisapride = reflux in premature infants); length+weight agree. WHO z not valid
+13907,remove,"[Claude] Length only (46 cm), no weight to corroborate; plausible preterm but unverifiable"
+5053,keep,[Claude] Probable preterm + established CHD + continuous murmur (PDA); pair consistent. WHO z not valid
+8643,keep,[Claude] Probable preterm + established CHD; pair consistent (whz 3.1). WHO z not valid
+10034,remove,"[Claude] Age wrong: 75 cm = ~11 mo height, 7.8 kg = ~6 mo weight, but age 2.4 mo"
+6801,remove,[Claude] Weight ok for age (waz -0.7) but 47 cm impossible (whz +6.9): height typo
+9978,keep,"[Claude] Established CHD, small + thin but pair consistent; growth failure plausible"
+10123,keep,"[Claude] Established CHD, 40 cm = very preterm size, weight proportionate (bmiz -0.3); low confidence"
+12086,remove,"[Claude] Weight normal for age (waz 0.0), 50 cm impossible (whz +6.9): height typo"
+10986,keep,"[Claude] Established CHD, small baby, pair consistent. WHO z not valid if preterm"
+5858,remove,"[Claude] Weight only (2.0 kg at 2.8 mo), nothing to corroborate; plausible preterm but unverifiable"
+7273,keep,"[Claude] Probable preterm: pair consistent (whz 1.2), size-age ~0 vs 2.8 mo. WHO z not valid"
+11678,keep,"[Claude] Probable preterm / small baby: pair consistent (whz 2.1), gap ~3 mo. WHO z not valid"
+13155,keep,"[Claude] Small baby, pair consistent (whz -1.7), gap ~3 mo. WHO z not valid"
+15383,remove,"[Claude] 13.5 kg at 3 mo impossible (weight-age 31 mo), no height: age or weight wrong"
+1393,keep,"[Claude] Established CHD + dyspnoea + murmur, small baby, pair consistent. WHO z not valid"
+6403,remove,[Claude] 78 cm at 3 mo = ~14 mo height: age wrong (or height typo); pair inconsistent (whz -3.2)
+15138,remove,[Claude] 11.3 kg at 3 mo impossible and referral is 'atividade fisica' (sports clearance): age is wrong
+1412,remove,[Claude] Weight ok (waz +1.2) but 51 cm impossible (whz +9.9): height typo
+9312,remove,[Claude] Weight ok for age (waz -1.0) but 51 cm impossible (whz +5.9): height typo
+7164,keep,"[Claude] Small baby with dyspnoea + systolic murmur, pair consistent (whz 1.2). WHO z not valid"
+853,remove,[Claude] 90 cm / 11 kg at 3.7 mo = ~15 mo child: age wrong
+10010,remove,[Claude] 78 cm / 9.5 kg at 3.7 mo = ~12 mo child: age wrong
+15620,keep,"[Claude] Established CHD, small baby, pair consistent (whz 0.1)"
+2695,remove,"[Claude] Weight ok (waz -1.1), 52 cm impossible (whz +5.8): height typo"
+3879,keep,"[Claude] Continuous murmur (PDA-type) in a small infant, pair consistent; gap 4 mo, low confidence"
+13097,keep,"[Claude] Established CHD, 43 cm / 3.2 kg, bmiz normal; growth failure of CHD vs preterm, low confidence"
+7960,remove,"[Claude] Weight ok (waz +0.2), 54 cm impossible (whz +5.2): height typo"
+6928,remove,"[Claude] Borderline: size-age ~1 mo vs 4.7 mo, gap >3.5 mo (beyond prematurity), no heart disease documented"
+4980,remove,"[Claude] Newborn-size (49 cm/3.5 kg) at 4.9 mo: gap beyond prematurity, no documented disease -> age/measure doubtful"
+5491,keep,"[Claude] Established CHD, small + proportionate (whz 0.0); growth failure of CHD, low confidence"
+4902,remove,"[Claude] Newborn-size at 5.3 mo, gap beyond prematurity, motivo 'OUTRO', no documented disease"
+7683,remove,"[Claude] Weight ok (waz +0.4), 56 cm impossible (whz +6.0): height typo"
+4556,remove,[Claude] 83 cm / 12 kg at 5.8 mo = ~19 mo child: age wrong
+10899,remove,[Claude] 97 cm / 13 kg at 5.9 mo = ~3 yr child: age wrong
+1223,remove,"[Claude] Newborn-size at 6 mo, gap beyond prematurity, routine check-up, no documented disease"
+12865,remove,[Claude] 98 cm / 16 kg at 6 mo = ~3 yr child: age wrong
+11836,remove,[Claude] 96 cm / 13 kg at 6.1 mo = ~3 yr child: age wrong
+12657,remove,"[Claude] Weight ok (waz -2.4) but 51 cm gives whz +4.7: inconsistent pair, height typo"
+2231,remove,[Claude] 46 cm / 2.6 kg at 7.2 mo = newborn size: age more likely wrong (murmur referral); no documented disease
+5661,remove,[Claude] Severe wasting (whz -5.5) with no documented disease; pair at 3.2/0.7 mo size vs 7.2 mo: unreliable
+9120,remove,"[Claude] 20 kg at 7.3 mo impossible, no height: age or weight wrong"
+15261,keep,"[Claude] Established CHD, small + proportionate; low confidence (size-age ~1-2 mo vs 7.3 mo)"
+2720,keep,"[Claude] Established CHD, small + proportionate (whz 0.4); low confidence (gap ~6 mo)"
+3861,remove,[Claude] 99 cm / 17 kg at 8.2 mo = ~3.5 yr child: age wrong
+8875,remove,"[Claude] Weight plausible, 62 cm too short for weight (whz +5.8): height typo"
+14942,remove,"[Claude] 11 kg at 8.4 mo but 59 cm (whz +7.9): inconsistent pair, one value wrong"
+2863,keep,"[Claude] Established CHD, small + proportionate (whz -0.9); low confidence (gap ~8 mo)"
+1463,remove,"[Claude] Size-age ~1-2 mo vs 10 mo, gap beyond prematurity, no documented disease"
+4806,remove,"[Claude] 2.5 kg at 10 mo (waz -8.3), no height to corroborate: unreliable"
+11366,remove,
+4915,remove,
+12749,remove,
+14675,remove,
+1224,remove,
+5309,remove,
+278,remove,
+10944,remove,
+7975,remove,
+9844,remove,
+12195,remove,
+5615,remove,
+5352,remove,"[Claude] 60 cm / 6.1 kg at 15 mo = ~3 mo size, no documented disease: age/measure wrong"
+3172,remove,"[Claude] Severe obesity under 2 y with normal height, no clinical reason (WHO BIV likely error); low confidence"
+9953,remove,
+3747,remove,
+10606,keep,
+3819,remove,

@@ -221,3 +221,5 @@ __marimo__/
 
 *.xls
 *.csv
+# manual BIV review decisions (row numbers + decisions + notes, no patient data): needed to reproduce the cleaning
+!data/biv_decisions.csv
