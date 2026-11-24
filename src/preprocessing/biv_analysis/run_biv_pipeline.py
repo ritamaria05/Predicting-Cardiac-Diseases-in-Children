@@ -1,7 +1,7 @@
 """
 Growth z-scores + BIV cleaning, end to end.
 
-    python src/preprocessing/run_biv_pipeline.py            (from the project root, any folder works)
+    python src/preprocessing/biv_analysis/run_biv_pipeline.py            (from the project root, any folder works)
 
 Reads    data/UCMF_labelled.csv  and  data/biv_decisions.csv (your manual review)
 Writes   data/UCMF_annotated.csv  every row, with z-scores, BIV flags and the removal decision
@@ -9,17 +9,19 @@ Writes   data/UCMF_annotated.csv  every row, with z-scores, BIV flags and the re
          data/biv_to_review.csv   only if data/biv_decisions.csv does not exist yet
 """
 import argparse
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # src/, so 'preprocessing' is importable
 import pandas as pd
 
 from preprocessing.biv_analysis.growth_scores import load_refs, add_growth_scores
 from preprocessing.biv_analysis.biv_removal import (add_biv_decision, biv_summary, export_review,
-                         blank_manual_values, apply_manual_decisions)
+                         blank_manual_values, apply_manual_decisions, flag_unscored)
 
 HERE = Path(__file__).resolve().parent
 ap = argparse.ArgumentParser()
-ap.add_argument("--data-dir", default=str(HERE.parent.parent / "data"))
+ap.add_argument("--data-dir", default=str(HERE.parents[2] / "data"))
 ap.add_argument("--out-dir", default=None, help="where to write the CSVs (default: data dir)")
 a = ap.parse_args()
 DATA = Path(a.data_dir)
@@ -28,7 +30,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 decisions = DATA / "biv_decisions.csv"
 
 df = pd.read_csv(DATA / "UCMF_labelled.csv")
-refs = load_refs(str(HERE / "WHOref_d.sas7bdat"), str(HERE / "CDCref_d.sas7bdat"))
+refs = load_refs(str(HERE.parent / "WHOref_d.sas7bdat"), str(HERE.parent / "CDCref_d.sas7bdat"))
 
 if decisions.exists():
     df = blank_manual_values(df, str(decisions))      # 1. blank impossible single values (before scoring)
@@ -37,6 +39,8 @@ out = add_growth_scores(df, refs, sex_col="sexo", birth_col="data_nascimento",
                         visit_col="atendimento", height_col="altura", weight_col="peso",
                         date_format="%Y-%m-%d")
 out = add_biv_decision(out)                           # 2. automatic rules
+out = flag_unscored(out, refs, sex_col="sexo", birth_col="data_nascimento", visit_col="atendimento",
+                    height_col="altura", weight_col="peso", date_format="%Y-%m-%d")  # 2b. rows without sex/age
 
 if decisions.exists():
     out = apply_manual_decisions(out, str(decisions)) # 3. your manual removals
@@ -49,7 +53,7 @@ out.to_csv(OUT / "UCMF_annotated.csv", index=False)
 
 if decisions.exists():
     bookkeeping = ["biv_ht", "biv_wt", "biv_bmi", "biv_wh", "biv_low", "biv_high", "biv_any",
-                   "biv_reason", "biv_action", "biv_removed", "biv_rules_matched"]
+                   "biv_reason", "biv_action", "biv_removed", "biv_rules_matched", "biv_unscored"]
     clean = out[~out["biv_removed"]].drop(columns=bookkeeping)
     clean.to_csv(OUT / "UCMF_clean.csv", index=False)
     print(f"\nUCMF_clean.csv: {len(clean)} rows ({int(out['biv_removed'].sum())} removed)")

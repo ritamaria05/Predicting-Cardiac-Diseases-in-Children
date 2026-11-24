@@ -190,3 +190,73 @@ def apply_manual_decisions(df: pd.DataFrame, path: str) -> pd.DataFrame:
     out.loc[ids, "biv_reason"] = "manual_review"
     print(f"{len(ids)} rows removed by manual review")
     return out
+
+
+# --------------------------------------------------------------------------- rows that cannot be scored
+AGELESS = ["no_age", "negative_age", "age_20y_or_more"]
+PRETERM_MONTHS = 4          # below this age a very small baby is plausibly premature: not removed
+
+
+def flag_unscored(df: pd.DataFrame, refs: dict, *, sex_col="sexo", birth_col="data_nascimento",
+                  visit_col="atendimento", height_col="altura", weight_col="peso",
+                  date_format="%Y-%m-%d") -> pd.DataFrame:
+    """Apply the BIV cutoffs to rows that add_growth_scores could not score, and remove only
+    the biologically impossible ones (same cutoffs as the scored rows, nothing stricter).
+
+      no_sex   (age >= 4 months)  scored twice, as male and as female; removed only if BIV in BOTH
+      no age   (sex known)   weight-for-length z (WHO, 45-110 cm, does not need age); BIV if |z| > 5
+      no age and no sex      weight-for-length for both sexes; removed only if BIV in BOTH
+      anything else          cannot be assessed: kept
+
+    Adds the column biv_unscored (True for the removed rows); biv_reason = 'unscored_extreme'."""
+    from preprocessing.biv_analysis.growth_scores import add_growth_scores, score_who, _sex_code
+
+    out = df.copy()
+    flagged = pd.Series(False, index=out.index)
+
+    # 1. sex missing, valid age: score with both sexes
+    # babies under PRETERM_MONTHS are kept: very small newborns are plausibly premature
+    m = out["growth_status"].eq("no_sex") & (pd.to_numeric(out["age_months"], errors="coerce") >= PRETERM_MONTHS)
+    if m.any():
+        base = out.loc[m, [birth_col, visit_col, sex_col, height_col, weight_col]]
+        hits = []
+        for s in ("M", "F"):
+            t = base.copy()
+            t[sex_col] = s
+            r = add_growth_scores(t, refs, sex_col=sex_col, birth_col=birth_col, visit_col=visit_col,
+                                  height_col=height_col, weight_col=weight_col, date_format=date_format)
+            hits.append((r["biv_low"].eq(1) | r["biv_high"].eq(1)))
+        flagged.loc[m] = (hits[0] & hits[1]).to_numpy()
+
+    # 2. no valid age: weight-for-length only (the reference needs sex and length, not age)
+    m = out["growth_status"].isin(AGELESS)
+    if m.any():
+        sex = _sex_code(out.loc[m, sex_col])
+        h = pd.to_numeric(out.loc[m, height_col], errors="coerce")
+        w = pd.to_numeric(out.loc[m, weight_col], errors="coerce")
+        ok = h.between(45, 110) & (w > 0)
+        def wh_biv(code):
+            """True where weight-for-length is a BIV for this sex (False when it cannot be scored)."""
+            use = (ok & (sex.eq(code) | sex.isna())).to_numpy()
+            f = np.zeros(len(h), dtype=bool)
+            if use.any():
+                inp = pd.DataFrame({"sex": code, "age_days": 365.0, "age_months": 12.0,
+                                    "height": h[use], "weight": w[use],
+                                    "bmi": w[use] / (h[use] / 100) ** 2})
+                z = score_who(inp, refs["who"])["biv_wh"].to_numpy(dtype=float)
+                f[use] = np.nan_to_num(z, nan=0.0) != 0
+            return f
+
+        f1, f2 = wh_biv(1), wh_biv(2)
+        known = sex.notna().to_numpy()
+        is_m = sex.eq(1).to_numpy()
+        hit = np.where(known, np.where(is_m, f1, f2), f1 & f2)
+        flagged.loc[m] = hit & ok.to_numpy()
+
+    new = flagged & ~out["biv_removed"].astype(bool)
+    out["biv_unscored"] = new
+    out.loc[new, "biv_any"] = True
+    out.loc[new, "biv_reason"] = "unscored_extreme"
+    out.loc[new, "biv_action"] = "remove"
+    out.loc[new, "biv_removed"] = True
+    return out

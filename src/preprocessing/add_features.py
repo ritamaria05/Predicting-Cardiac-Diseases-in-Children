@@ -111,6 +111,9 @@ ANALYSIS_COLS = [
     "age_group", "bmi_cat", "whz_cat", "sintomas", "motivo2_grupo", "convenio_grupo",
 ]
 
+# text labels that really mean "no value": NaN in the analysis file (the full file keeps the original text)
+MISSING_TEXT = ["NAO CALCULADO", "NAO REGISTADO", "DESCONHECIDO"]
+
 NEW_COLS = ["age_group", "bmi_cat", "whz_cat", "sintomas", "motivo2_grupo", "convenio_grupo"]
 
 if __name__ == "__main__":
@@ -126,6 +129,6 @@ if __name__ == "__main__":
         print(f"\n{c}:", out[c].value_counts(dropna=False).to_dict())
     out.to_csv(dst / "UCMF_features.csv", index=False)
     print(f"\nWrote {dst / 'UCMF_features.csv'} ({len(out)} rows, {out.shape[1]} columns)")
-    slim = out[ANALYSIS_COLS]
+    slim = out[ANALYSIS_COLS].replace(MISSING_TEXT, np.nan)
     slim.to_csv(dst / "UCMF_analysis.csv", index=False)
     print(f"Wrote {dst / 'UCMF_analysis.csv'} ({len(slim)} rows, {slim.shape[1]} columns)")
