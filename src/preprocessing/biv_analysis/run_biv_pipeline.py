@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from growth_scores import load_refs, add_growth_scores
-from biv_removal import (add_biv_decision, biv_summary, export_review,
+from preprocessing.biv_analysis.growth_scores import load_refs, add_growth_scores
+from preprocessing.biv_analysis.biv_removal import (add_biv_decision, biv_summary, export_review,
                          blank_manual_values, apply_manual_decisions)
 
 HERE = Path(__file__).resolve().parent

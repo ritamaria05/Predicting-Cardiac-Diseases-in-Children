@@ -22,7 +22,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from bp_tables import load_bp_tables, HEIGHT_PCT
+from preprocessing.ppa_bp_analysis.bp_tables import load_bp_tables, HEIGHT_PCT
 
 LEVELS = ["NORMAL", "PRE-HIPERTENSAO", "HAS-1", "HAS-2"]
 

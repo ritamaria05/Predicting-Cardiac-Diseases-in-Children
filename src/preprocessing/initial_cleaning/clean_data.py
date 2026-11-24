@@ -4,7 +4,7 @@ import unicodedata
 import re
 import pandas as pd
 import numpy as np
-from mappings import (
+from preprocessing.initial_cleaning.mappings import (
     ANOMALY_LOOKUP, BOUNDS_BY_AGE, CONVENIO_LOOKUP,
     DN_MANUAL_FIXES, DN_TO_AGE_MAPPING, SEX_LOOKUP,
     get_bounds_by_age

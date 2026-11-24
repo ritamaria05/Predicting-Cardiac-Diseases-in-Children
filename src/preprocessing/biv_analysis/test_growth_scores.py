@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from growth_scores import (load_refs, add_growth_scores, growth_report, score_who, score_cdc,
+from preprocessing.biv_analysis.growth_scores import (load_refs, add_growth_scores, growth_report, score_who, score_cdc,
                            _sd_value)
 
 HERE = Path(__file__).resolve().parent
