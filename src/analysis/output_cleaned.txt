@@ -1,0 +1,196 @@
+1. SHAPE AND TYPES
+Rows: 16957 | Columns: 23
+id                           int64
+peso                       float64
+altura                     float64
+imc                        float64
+atendimento         datetime64[us]
+data_nascimento     datetime64[us]
+idade                      float64
+convenio                       str
+pulsos                         str
+pa_sistolica               float64
+pa_diastolica              float64
+ppa                            str
+normal_x_anormal               str
+b2                             str
+sopro                          str
+fc                         float64
+hda_1                          str
+hda_2                          str
+sexo                           str
+motivo_1                       str
+motivo_2                       str
+idade_origem                   str
+idade_suspeita                bool
+
+2. MISSING VALUES AND UNIQUE VALUES PER COLUMN
+                  non_null  missing  missing_%  unique
+id                   16957        0       0.00   16957
+peso                 14798     2159      12.73     710
+altura               13293     3664      21.61     155
+imc                  12916     4041      23.83    1675
+atendimento          16747      210       1.24    1841
+data_nascimento      16325      632       3.73    6191
+idade                16076      881       5.20    1728
+convenio             12443     4514      26.62      61
+pulsos               16546      411       2.42       5
+pa_sistolica         10076     6881      40.58      46
+pa_diastolica        10066     6891      40.64      35
+ppa                  16026      931       5.49       8
+normal_x_anormal     16562      395       2.33       2
+b2                   16565      392       2.31       5
+sopro                16574      383       2.26       5
+fc                   15704     1253       7.39     102
+hda_1                12369     4588      27.06       8
+hda_2                12369     4588      27.06       8
+sexo                 16305      652       3.85       2
+motivo_1             16639      318       1.88       5
+motivo_2             16639      318       1.88      17
+idade_origem         16957        0       0.00       3
+idade_suspeita       16957        0       0.00       2
+
+3. NUMERICAL VARIABLES
+          idade      peso    altura       imc  pa_sistolica  pa_diastolica        fc
+count  16076.00  14798.00  13293.00  12916.00      10076.00       10066.00  15704.00
+mean       6.09     24.93    111.94     17.74        101.17          62.32     92.31
+std        4.49     17.05     33.78      3.94         11.20           8.82     16.87
+min        0.00      1.20     36.00      4.20         60.00          23.00     43.00
+25%        2.25     12.80     90.00     15.35         90.00          60.00     80.00
+50%        5.52     21.00    114.00     16.97        100.00          60.00     90.00
+75%        9.62     34.00    138.00     19.42        110.00          70.00    100.00
+max       19.91    157.00    198.00    167.32        190.00         120.00    300.00
+
+4. CATEGORICAL VARIABLES (top 10 values)
+
+sexo:
+sexo
+M      9518
+F      6787
+NaN     652
+
+normal_x_anormal:
+normal_x_anormal
+NORMAL     9933
+ANORMAL    6629
+NaN         395
+
+pulsos:
+pulsos
+NORMAIS                16386
+NaN                      411
+AMPLOS                    57
+OUTRO                     45
+FEMORAIS DIMINUIDOS       42
+DIMINUIDOS                16
+
+b2:
+b2
+NORMAL           15857
+NaN                392
+HIPERFONETICA      332
+DESDOB FIXO        189
+OUTRO              103
+UNICA               84
+
+sopro:
+sopro
+AUSENTE                   10674
+SISTOLICO                  5836
+NaN                         383
+CONTINUO                     49
+DIASTOLICO                   12
+SISTOLICO E DIASTOLICO        3
+
+ppa:
+ppa
+NAO CALCULADO          8988
+NORMAL                 6106
+NaN                     931
+PRE-HIPERTENSAO PAD     233
+HAS-2 PAS               211
+PRE-HIPERTENSAO PAS     192
+HAS-1 PAS               152
+HAS-1 PAD                86
+HAS-2 PAD                58
+
+convenio:
+convenio
+NaN               4514
+GRUPO SAUDE       3361
+UNIMED RECIFE     2377
+CAMED              814
+SUL AMERICA        812
+SAUDE BRADESCO     739
+MEDIAL             595
+NORCLINICAS        516
+REAL SAUDE         485
+IDEAL SAUDE        240
+
+motivo_1:
+motivo_1
+5 - PARECER CARDIOLOGICO           7935
+6 - SUSPEITA DE CARDIOPATIA        5800
+1 - CARDIOPATIA JA ESTABELECIDA    1407
+2 - CHECK-UP                       1042
+7 - OUTRO                           455
+NaN                                 318
+
+motivo_2:
+motivo_2
+5 - CIRURGIA                           4194
+NENHUM                                 3664
+6 - SOPRO                              2954
+1 - CARDIOPATIA CONGENICA              1241
+5 - ATIVIDADE FISICA                   1122
+OUTRO                                  1088
+6 - DOR PRECORDIAL                      646
+6 - PALPITACAO TAQUICARDIA ARRITMIA     591
+6 - HAS DISLIPIDEMIA OBESIDADE          422
+6 - DISPNEIA                            332
+
+hda_1:
+hda_1
+ASSINTOMATICO      9213
+NaN                4588
+DOR PRECORDIAL      870
+DISPNEIA            759
+PALPITACAO          577
+CIANOSE             296
+DESMAIO TONTURA     268
+OUTRO               207
+GANHO DE PESO       179
+
+hda_2:
+hda_2
+NENHUM             11723
+NaN                 4588
+PALPITACAO           149
+DISPNEIA             137
+DOR PRECORDIAL        97
+CIANOSE               86
+DESMAIO TONTURA       77
+OUTRO                 65
+GANHO DE PESO         35
+
+idade_origem:
+idade_origem
+calculada    16139
+ausente        800
+declarada       18
+
+5. DATES
+atendimento: min 1966-08-22 00:00:00 | max 2023-06-25 00:00:00
+data_nascimento: min 1888-09-29 00:00:00 | max 2022-07-09 00:00:00
+
+6. SANITY CHECKS
+Fully duplicated rows: 0
+Duplicated ids: 0
+idade outside [0, 20]: 0
+Rows without target (normal_x_anormal): 395
+Target distribution (%):
+normal_x_anormal
+NORMAL     60.0
+ANORMAL    40.0
+Rows with at least one missing value: 12980
+Rows with no missing value (complete cases): 3977

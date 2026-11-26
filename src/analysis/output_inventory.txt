@@ -1,0 +1,66 @@
+UCMF(5).xls (raw) | rows: 17873 | columns: 21
+
+UCMF_cleaned.csv | created/modified: 2026-11-19 19:02
+  rows: 16957 | columns: 23
+  columns: ['id', 'peso', 'altura', 'imc', 'atendimento', 'data_nascimento', 'idade', 'convenio', 'pulsos', 'pa_sistolica', 'pa_diastolica', 'ppa', 'normal_x_anormal', 'b2', 'sopro', 'fc', 'hda_1', 'hda_2', 'sexo', 'motivo_1', 'motivo_2', 'idade_origem', 'idade_suspeita']
+  target (normal_x_anormal): {'NORMAL': 9933, 'ANORMAL': 6629, nan: 395}
+
+biv_decisions.csv | created/modified: 2026-11-25 18:03
+  rows: 188 | columns: 3
+  added vs previous file: ['row_id', 'decision', 'note']
+  removed vs previous file: ['id', 'peso', 'altura', 'imc', 'atendimento', 'data_nascimento', 'idade', 'convenio', 'pulsos', 'pa_sistolica', 'pa_diastolica', 'ppa', 'normal_x_anormal', 'b2', 'sopro', 'fc', 'hda_1', 'hda_2', 'sexo', 'motivo_1', 'motivo_2', 'idade_origem', 'idade_suspeita']
+  target column: not present
+
+UCMF_labelled.csv | created/modified: 2026-11-26 20:55
+  rows: 16562 | columns: 23
+  added vs previous file: ['id', 'peso', 'altura', 'imc', 'atendimento', 'data_nascimento', 'idade', 'convenio', 'pulsos', 'pa_sistolica', 'pa_diastolica', 'ppa', 'normal_x_anormal', 'b2', 'sopro', 'fc', 'hda_1', 'hda_2', 'sexo', 'motivo_1', 'motivo_2', 'idade_origem', 'idade_suspeita']
+  removed vs previous file: ['row_id', 'decision', 'note']
+  target (normal_x_anormal): {'NORMAL': 9933, 'ANORMAL': 6629}
+
+UCMF_unlabelled.csv | created/modified: 2026-11-26 20:55
+  rows: 395 | columns: 23
+  added vs previous file: none
+  removed vs previous file: none
+  target (normal_x_anormal): {nan: 395}
+
+UCMF_annotated.csv | created/modified: 2026-11-26 20:58
+  rows: 16562 | columns: 60
+  added vs previous file: ['blanked_value', 'age_days', 'age_months', 'age_years', 'bmi_calc', 'growth_status', 'growth_ref', 'haz', 'hapct', 'waz', 'wapct', 'bmiz', 'bmipct', 'whz', 'whpct', 'biv_ht', 'biv_wt', 'biv_bmi', 'biv_wh', 'mod_haz', 'mod_waz', 'mod_bmiz', 'mod_whz', 'bmi50', 'bmi95', 'bmip95', 'bmi120', 'original_bmiz', 'original_bmipct', 'biv_low', 'biv_high', 'biv_any', 'biv_reason', 'biv_action', 'biv_removed', 'biv_rules_matched', 'biv_unscored']
+  removed vs previous file: none
+  target (normal_x_anormal): {'NORMAL': 9933, 'ANORMAL': 6629}
+
+UCMF_clean.csv | created/modified: 2026-11-26 20:58
+  rows: 16288 | columns: 48
+  added vs previous file: none
+  removed vs previous file: ['biv_ht', 'biv_wt', 'biv_bmi', 'biv_wh', 'biv_low', 'biv_high', 'biv_any', 'biv_reason', 'biv_action', 'biv_removed', 'biv_rules_matched', 'biv_unscored']
+  target (normal_x_anormal): {'NORMAL': 9787, 'ANORMAL': 6501}
+
+UCMF_final.csv | created/modified: 2026-11-26 21:15
+  rows: 16088 | columns: 48
+  added vs previous file: none
+  removed vs previous file: none
+  target (normal_x_anormal): {'NORMAL': 9622, 'ANORMAL': 6466}
+
+UCMF_final_removed.csv | created/modified: 2026-11-26 21:15
+  rows: 200 | columns: 50
+  added vs previous file: ['linha_em_clean', 'motivo_remocao']
+  removed vs previous file: none
+  target (normal_x_anormal): {'NORMAL': 165, 'ANORMAL': 35}
+
+UCMF_bp.csv | created/modified: 2026-11-26 21:18
+  rows: 16088 | columns: 60
+  added vs previous file: ['sbp_p90', 'sbp_p95', 'sbp_p99', 'dbp_p90', 'dbp_p95', 'dbp_p99', 'bp_status', 'sbp_level', 'dbp_level', 'bp_level', 'bp_cat', 'bp_label']
+  removed vs previous file: ['linha_em_clean', 'motivo_remocao']
+  target (normal_x_anormal): {'NORMAL': 9622, 'ANORMAL': 6466}
+
+UCMF_features.csv | created/modified: 2026-11-26 21:19
+  rows: 16088 | columns: 66
+  added vs previous file: ['age_group', 'bmi_cat', 'whz_cat', 'sintomas', 'motivo2_grupo', 'convenio_grupo']
+  removed vs previous file: none
+  target (normal_x_anormal): {'NORMAL': 9622, 'ANORMAL': 6466}
+
+UCMF_analysis.csv | created/modified: 2026-11-26 21:19
+  rows: 16088 | columns: 30
+  added vs previous file: none
+  removed vs previous file: ['id', 'atendimento', 'data_nascimento', 'idade_origem', 'idade_suspeita', 'blanked_value', 'age_days', 'age_months', 'age_years', 'bmi_calc', 'growth_status', 'hapct', 'wapct', 'bmipct', 'whpct', 'mod_haz', 'mod_waz', 'mod_bmiz', 'mod_whz', 'bmi50', 'bmi95', 'bmip95', 'bmi120', 'original_bmiz', 'original_bmipct', 'sbp_p90', 'sbp_p95', 'sbp_p99', 'dbp_p90', 'dbp_p95', 'dbp_p99', 'bp_status', 'sbp_level', 'dbp_level', 'bp_level', 'bp_label']
+  target (normal_x_anormal): {'NORMAL': 9622, 'ANORMAL': 6466}
