@@ -1,0 +1,54 @@
+CATEGORICAL VARIABLES, before vs after
+(unique_ignoring_case: unique labels ignoring case, accents and punctuation;
+ needs_recoding: rows whose label is not one of the standard labels, should be 0 after cleaning)
+
+                                rows  non_null missing_%  unique  unique_ignoring_case                 top_value top_%  rare_<1% needs_recoding
+variable         file                                                                                                                          
+sexo             raw           17873     17869      0.02       6                     5                         M  50.0         0           2327
+                 UCMF_cleaned  16957     16305      3.85       2                     2                         M  58.4         0              0
+                 UCMF_final    16088     15578      3.17       2                     2                         M  58.4         0              0
+normal_x_anormal raw           17873     16705      6.53       4                     3                    NORMAL  59.8         1              1
+                 UCMF_cleaned  16957     16562      2.33       2                     2                    NORMAL  60.0         0              0
+                 UCMF_final    16088     16088       0.0       2                     2                    NORMAL  59.8         0              0
+pulsos           raw           17873     16675       6.7       7                     5                   NORMAIS  99.0         4              0
+                 UCMF_cleaned  16957     16546      2.42       5                     5                   NORMAIS  99.0         4              0
+                 UCMF_final    16088     16050      0.24       5                     5                   NORMAIS  99.0         4              0
+b2               raw           17873     16694       6.6       5                     5                    NORMAL  95.7         2              0
+                 UCMF_cleaned  16957     16565      2.31       5                     5                    NORMAL  95.7         2              0
+                 UCMF_final    16088     16072       0.1       5                     5                    NORMAL  95.8         2              0
+sopro            raw           17873     16706      6.53       7                     5                   AUSENTE  64.2         3              0
+                 UCMF_cleaned  16957     16574      2.26       5                     5                   AUSENTE  64.4         3              0
+                 UCMF_final    16088     16079      0.06       5                     5                   AUSENTE  64.2         3              0
+ppa              raw           17873     17656      1.21       9                     9             NAO CALCULADO  51.4         3           1496
+                 UCMF_cleaned  16957     16026      5.49       8                     8             NAO CALCULADO  56.1         3              0
+                 UCMF_final    16088     15331      4.71       8                     8             NAO CALCULADO  54.7         3              0
+convenio         raw           17873     12569     29.68     439                   265                        GS  22.0       249           None
+                 UCMF_cleaned  16957     12443     26.62      61                    61               GRUPO SAUDE  27.0        45           None
+                 UCMF_final    16088     11827     26.49      61                    61               GRUPO SAUDE  27.2        45           None
+motivo_1         raw           17873     16776      6.14       5                     5  5 - PARECER CARDIOLOGICO  47.6         0              0
+                 UCMF_cleaned  16957     16639      1.88       5                     5  5 - PARECER CARDIOLOGICO  47.7         0              0
+                 UCMF_final    16088     15906      1.13       5                     5  5 - PARECER CARDIOLOGICO  47.7         0              0
+motivo_2         raw           17873     13095     26.73      16                    16              5 - CIRURGIA  32.2         5              0
+                 UCMF_cleaned  16957     16639      1.88      17                    17              5 - CIRURGIA  25.2         7              0
+                 UCMF_final    16088     15906      1.13      17                    17              5 - CIRURGIA  25.2         7              0
+hda_1            raw           17873     12459     30.29       8                     8             ASSINTOMATICO  74.6         0              0
+                 UCMF_cleaned  16957     12369     27.06       8                     8             ASSINTOMATICO  74.5         0              0
+                 UCMF_final    16088     12074     24.95       8                     8             ASSINTOMATICO  74.5         0              0
+hda_2            raw           17873       652     96.35       8                     8                PALPITACAO  23.0         1              0
+                 UCMF_cleaned  16957     12369     27.06       8                     8                    NENHUM  94.8         5              0
+                 UCMF_final    16088     12074     24.95       8                     8                    NENHUM  94.7         5              0
+
+UNEXPECTED LABELS in the cleaned files:
+  none
+
+
+TARGET DISTRIBUTION AND CLASS BALANCE (NORMAL x ANORMAL)
+(percentages are over the labelled rows; baseline_accuracy = always predicting the majority class)
+
+               rows  NORMAL  ANORMAL  missing  other_labels  NORMAL_%  ANORMAL_%  imbalance_ratio  baseline_accuracy_%
+file                                                                                                                  
+raw           17873    9992     6713     1168             0      59.8       40.2             1.49                 59.8
+UCMF_cleaned  16957    9933     6629      395             0      60.0       40.0             1.50                 60.0
+UCMF_final    16088    9622     6466        0             0      59.8       40.2             1.49                 59.8
+
+Saved: results/categorical_summary.csv, results/target_balance.csv, /Users/bia/Developer/mcc/fcd/project/Predicting-Cardiac-Diseases-in-Children/figures/target_distribution.png
